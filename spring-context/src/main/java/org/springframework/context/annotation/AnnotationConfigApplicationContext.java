@@ -63,22 +63,31 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 */
 	public AnnotationConfigApplicationContext() {
-		//读取器
-		//调用AnnotatedBeanDefinitionReader 构造方法， 传入  AnnotationConfigApplicationContext对象
-		// BenaDefinitionRegistry
+		// 读取器
+		// 调用AnnotatedBeanDefinitionReader 构造方法， 传入  AnnotationConfigApplicationContext对象
+		// Meta- BeanDefinitionRegistry
+		// Meta- 可以把某个类转化为BeanDefinition， 并且会解析类上的注解
+		// Meta- 他能解析的注解有： @Conditional，@Scope、@Lazy、@Primary、@DependsOn、@Role、@Description
 		this.reader = new AnnotatedBeanDefinitionReader(this);
-		//创建BeanDefinition扫描器
-		//初始化  classpath类型的beanDefinition 扫描器
-		//扫描包或者类，将其转化为beanDefinition；
-		//spring内部并不是使用这个扫描器，而是自己重新new了一个ClassPathBeanDefinition
-		//此处的scan对象 是提供给我们在外部调用扫描包或者类 context.scan();
-
+		// Meta- 创建BeanDefinition扫描器
+		// Meta- 初始化  classpath类型的beanDefinition 扫描器
+		// Meta- 扫描包或者类，将其转化为beanDefinition；
+		// Meta- spring内部并不是使用这个扫描器，而是自己重新new了一个ClassPathBeanDefinition
+		// Meta- 此处的scan对象 是提供给我们在外部调用扫描包或者类 context.scan();
+		// Meta- 扫描器 通过给定的包路劲，扫描类，判断如果类上存在@Component注解的，则将其解析为一个BeanDefinition；
+		// Meta- 判断类上注解， 是通过MetadataReader、ClassMetadata、AnnotationMetadata来获取类上的元数据，
+		// Meta- （比如说类名，注解信息<注解嵌套注解也可以判断出来>，接口信息，方法信息等等 ）以此来判断是否满足注解要求。
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
 	/**
 	 * Create a new AnnotationConfigApplicationContext with the given DefaultListableBeanFactory.
 	 * @param beanFactory the DefaultListableBeanFactory instance to use for this context
+	 *
+	 *   Meta- DefaultListableBeanFactory: 默认展示信息的bean工厂，
+	 *         与ApplicationContext 一致 都实现了BeanFactory，但是ApplicationContext还实现了 诸如国际化，资源处理器等接口，
+	 *         而DefaultListableBeanFactory， 是实现BeanFactory，用以 getBean() / registerBean 等。
+	 *         其功能很强大， 在不考虑其他功能情况下，可以替代ApplicationContext使用。
 	 */
 	public AnnotationConfigApplicationContext(DefaultListableBeanFactory beanFactory) {
 		super(beanFactory);

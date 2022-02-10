@@ -75,9 +75,19 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	private final Map<String, Set<String>> metaAnnotationTypesCache = new ConcurrentHashMap<>();
 
 
+	/**
+	 * Meta- 设置beanName
+	 * 		1. 注解上有值去注解
+	 * 		2. 注解上没有值 调用jdk方法 首字母小写 设置成默认beanName
+	 * @param definition the bean definition to generate a name for
+	 * @param registry the bean definition registry that the given definition
+	 * is supposed to be registered with
+	 * @return
+	 */
 	@Override
 	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
 		if (definition instanceof AnnotatedBeanDefinition) {
+			// Meta- 处理得到beanName
 			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
 			if (StringUtils.hasText(beanName)) {
 				// Explicit bean name found.
@@ -85,6 +95,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 			}
 		}
 		// Fallback: generate a unique default bean name.
+		// Meta- 调用Jdk生成默认的beanName   User -> beanName： user
+		// Meta- 如果一个类型 第一个字符和第二个字符都是大写 则直接返回类名  如： ABtest ->  beanName： ABtest
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -95,6 +107,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	 */
 	@Nullable
 	protected String determineBeanNameFromAnnotation(AnnotatedBeanDefinition annotatedDef) {
+		// Meta- 拿到注解
 		AnnotationMetadata amd = annotatedDef.getMetadata();
 		Set<String> types = amd.getAnnotationTypes();
 		String beanName = null;
@@ -105,7 +118,9 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 					Set<String> result = amd.getMetaAnnotationTypes(key);
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
+				// Meta- 判断注解是否是@Component @ManagedBean @Bean
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
+					// Meta- 注解上有值 则使用注解的值作为beanName
 					Object value = attributes.get("value");
 					if (value instanceof String) {
 						String strVal = (String) value;
@@ -167,6 +182,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 		String beanClassName = definition.getBeanClassName();
 		Assert.state(beanClassName != null, "No bean class name set");
 		String shortClassName = ClassUtils.getShortName(beanClassName);
+		// Meta- jdk自带工具类， User -> user (首字母小写)
 		return Introspector.decapitalize(shortClassName);
 	}
 

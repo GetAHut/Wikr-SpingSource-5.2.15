@@ -868,17 +868,37 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// Meta- 所有的beanName 在注册beanDefinition时保存
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// Meta- 循环创建单例bean
 		for (String beanName : beanNames) {
+			// Meta- 获取beanDefinition
+			// Meta- RootBeanDefinition是合并之后的beanDefinition
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+
+			// Meta- !bd.isAbstract() -> 判断是不是抽象的beanDefinition  不是指抽象类， 在扫描的时候就判断了抽象类（除了@lookup）是不会扫描成beanDefinition
+			// Meta- 在xml配置中可以设置abstract = true， 则可以设置成抽象的beanDefinition，可以作为其他非抽象bd的父类，则可以继续此bd的属性。
+			// Meta- 是否是单例的bean ，且不是懒加载的bean 再去创建bean
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// Meta- 判断是否是FactoryBean
 				if (isFactoryBean(beanName)) {
+					// Meta- FACTORY_BEAN_PREFIX -> '&'
+					// Meta- 创建factoryBean本身的bean。 即---> &WikrFactoryBean
+					// Meta- 当调用getBean()的时候 再去调用FactoryBean.getObject()方法。
+					// Meta- 如果实现的不是FactoryBean而是SmartFactoryBean且，isEagerInit()返回true 则先将factoryBean创建成功。
+					// Meta- 如果实现的是FactoryBean.则在容器创建完成后，调用getBean()时 再去创建FactoryBean。
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+					// Meta- 判断是否是FactoryBean
 					if (bean instanceof FactoryBean) {
+						// Meta- 强转
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
 						boolean isEagerInit;
+						// Meta- TODO 扩展点 SmartFactoryBean、FactoryBean
+						// Meta- SmartFactoryBean.isEagerInit()默认返回的是false， 如果实现其并修改成true，
+						//  	那么会在spring容器启动的时候就会调用getObject() 创建偷天换日的bean！
+						// Meta- 调用所有实现SmartFactoryBean的isEagerInit();
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
 							isEagerInit = AccessController.doPrivileged(
 									(PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
@@ -888,24 +908,35 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+						// Meta- isEagerInit == true -> 即直接调用getBean(beanName) -> getObject() -> 将factoryBean创建成功、
 						if (isEagerInit) {
+							// Meta- getBean() -> 调用factoryBean.getObject()方法
+							// Meta- 返回一个需要偷天换日的bean。 ->  getObject()返回的对象bean
 							getBean(beanName);
 						}
 					}
 				}
 				else {
+					// Meta- 创建bean对象
 					getBean(beanName);
 				}
 			}
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// Meta- 在所有非懒加载的bean创建完成之后
 		for (String beanName : beanNames) {
+			// Meta- 从单例池中拿创建好的单例bean
 			Object singletonInstance = getSingleton(beanName);
+			// Meta- 判断bean是否实现了SmartInitializingSingleton接口。
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
+				// Meta- getSecurityManager -> 安全管理器
 				if (System.getSecurityManager() != null) {
 					AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+						// Meta- 调用 SmartInitializingSingleton.afterSingletonsInstantiated()
+						// Meta- TODO spring 扩展点 SmartInitializingSingleton
+						// Meta- 在所有的非懒加载bean创建完成之后调用此方法。
 						smartSingleton.afterSingletonsInstantiated();
 						return null;
 					}, getAccessControlContext());
@@ -969,6 +1000,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {
+			// Meta- 检车bean是否开始创建，并没哟被标记成已创建。
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
 				synchronized (this.beanDefinitionMap) {
@@ -976,6 +1008,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
 					updatedDefinitions.addAll(this.beanDefinitionNames);
 					updatedDefinitions.add(beanName);
+					// Meta- 保存所有的beanNames
 					this.beanDefinitionNames = updatedDefinitions;
 					removeManualSingletonName(beanName);
 				}

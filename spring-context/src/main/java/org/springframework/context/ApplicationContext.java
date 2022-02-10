@@ -54,6 +54,19 @@ import org.springframework.lang.Nullable;
  * @see ConfigurableApplicationContext
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.core.io.ResourceLoader
+ *
+ * Meta- EnvironmentCapable: 可以获取运行时环境信息，（只能获取 不能设置）
+ * 		eg: context.getEnvironment().getSystemProperties(); -> // Map
+ * 			context.getEnvironment().getSystemEnvironment(); -> // Map
+ * Meta- ListableBeanFactory: 拥有可以获取beanNames的功能。
+ * Meta- HierarchicalBeanFactory: 父子bean工厂，在spring中beanDefinition是不止一个的，
+ * 		有可能是在子类中，也有可能是在父类中。这个接口
+ * Meta- MessageSource: 国际化资源处理器
+ * Meta- ApplicationEventPublisher:  spring 事件发布器 （容器启动完成会发布一个事件<扩展点>）
+ * Meta- ResourcePatternResolver: 资源加载器，可以加载任意一个资源，本地文件、网络图片...
+ * 		eg: context.getResource("file://D:\project\source-workspace\spring-framework-5.2.15.RELEASE\spring-wikr-test\src\main\java\com\wikr\SpringContextApplication.java);
+ *
+ *
  */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {

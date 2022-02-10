@@ -76,12 +76,16 @@ class ConditionEvaluator {
 	 * @param metadata the meta data
 	 * @param phase the phase of the call
 	 * @return if the item should be skipped
+	 *
+	 * Meta- beanDefinition 中条件注入判断 @Conditional
 	 */
 	public boolean shouldSkip(@Nullable AnnotatedTypeMetadata metadata, @Nullable ConfigurationPhase phase) {
+		// Meta- 如果一个类上没有这个注解@Condition 则不要跳过（外层 有！非）
 		if (metadata == null || !metadata.isAnnotated(Conditional.class.getName())) {
 			return false;
 		}
 
+		// Meta- 后面是针对 条件注解，实现的Condition接口的类的方法调用 ，匹配则返回
 		if (phase == null) {
 			if (metadata instanceof AnnotationMetadata &&
 					ConfigurationClassUtils.isConfigurationCandidate((AnnotationMetadata) metadata)) {

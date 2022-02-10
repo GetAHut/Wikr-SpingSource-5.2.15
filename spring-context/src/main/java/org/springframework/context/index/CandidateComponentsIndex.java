@@ -79,6 +79,7 @@ public class CandidateComponentsIndex {
 	 * or an empty set if none has been found for the specified {@code basePackage}
 	 */
 	public Set<String> getCandidateTypes(String basePackage, String stereotype) {
+		// Meta- 遍历文件中扫描出啦的class
 		List<Entry> candidates = this.index.get(stereotype);
 		if (candidates != null) {
 			return candidates.parallelStream()

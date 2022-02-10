@@ -22,11 +22,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionDefaults;
-import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanNameGenerator;
+import org.springframework.beans.factory.support.*;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.EnvironmentCapable;
 import org.springframework.core.env.StandardEnvironment;
@@ -62,6 +58,7 @@ import org.springframework.util.PatternMatchUtils;
  */
 public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateComponentProvider {
 
+	// Meta- beanDefinition注册器。此处接口 其模式值 是在初始化时 传入了DefaultListableBeanFactory
 	private final BeanDefinitionRegistry registry;
 
 	private BeanDefinitionDefaults beanDefinitionDefaults = new BeanDefinitionDefaults();
@@ -163,6 +160,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		this.registry = registry;
 
 		if (useDefaultFilters) {
+			// Meta- 初始化扫描器时，默认添加@Component 过滤器。
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -247,10 +245,14 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * Perform a scan within the specified base packages.
 	 * @param basePackages the packages to check for annotated classes
 	 * @return number of beans registered
+	 *
+	 * Meta- 根据传入的包路径扫描。
 	 */
 	public int scan(String... basePackages) {
+		// Meta- 统计扫描之前有多少bean
 		int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
 
+		// Meta- 开始扫描
 		doScan(basePackages);
 
 		// Register annotation config processors, if necessary.
@@ -258,6 +260,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 			AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 		}
 
+		// Meta- 扫描之后的bean-之前的bean => 获取注册了多少bean
 		return (this.registry.getBeanDefinitionCount() - beanCountAtScanStart);
 	}
 
@@ -271,24 +274,45 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		// Meta- beanDefinitions
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
+
+			// Meta- 扫描出所有的候选bean 并生成beanDefinition
+			// Meta- 按照扫描思路， 根据包路径扫描出所有的class文件，逐一构建成BeanDefinition
+			// Meta- 此处获取的beanDefinition 的属性比较单一 只有一个beanClass属性可用
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			// Meta- 遍历上一步解析到的beanDefinition，并设置属性。
 			for (BeanDefinition candidate : candidates) {
+				// Meta- 通过AnnotationScopeMetadataResolver 解析scope属性。
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+				// Meta- 设置scope属性
 				candidate.setScope(scopeMetadata.getScopeName());
+				// Meta- 设置beanName：
+				// Meta- beanName: 判断分两步： 1. 如果在注解上value有值，则取其值，2. 如果注解上没有，则默认首字母小写设置beanName
+				// Meta- @see: org.springframework.context.annotation.AnnotationBeanNameGenerator#buildDefaultBeanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+
 				if (candidate instanceof AbstractBeanDefinition) {
+					// Meta- 给BeanDefinition设置属性默认值
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
+
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					// Meta- 解析 @Lazy、 @Primary、 @DependsOn、 @Role、 @Description
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
+
+				// Meta- 检查容器中是否已经存在beanName
+				// Meta- 如果不存在则注册到beanDefinitionMap中。
+				// Meta- DefaultListableBeanFactory.registerBeanDefinition().beanDefinitionMap.put(beanName, beanDefinition);
 				if (checkCandidate(beanName, candidate)) {
+					// Meta- BeanDefinitionHolder -> beanDefinition持有对象。
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+					// Meta- 注册beanDefinition
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
@@ -303,6 +327,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @param beanName the generated bean name for the given bean
 	 */
 	protected void postProcessBeanDefinition(AbstractBeanDefinition beanDefinition, String beanName) {
+		// Meta- 设置默认属性
 		beanDefinition.applyDefaults(this.beanDefinitionDefaults);
 		if (this.autowireCandidatePatterns != null) {
 			beanDefinition.setAutowireCandidate(PatternMatchUtils.simpleMatch(this.autowireCandidatePatterns, beanName));
@@ -341,9 +366,12 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		if (originatingDef != null) {
 			existingDef = originatingDef;
 		}
+		// Meta- bean之间是否可以兼容
+		// Meta- 防止同一个包路径 是否多次扫描。 如果多次扫描只需要注册一次就行了， 这里直接返回false。
 		if (isCompatible(beanDefinition, existingDef)) {
 			return false;
 		}
+		// Meta- 抛出bean冲突异常
 		throw new ConflictingBeanDefinitionException("Annotation-specified bean name '" + beanName +
 				"' for bean class [" + beanDefinition.getBeanClassName() + "] conflicts with existing, " +
 				"non-compatible bean definition of same name and class [" + existingDef.getBeanClassName() + "]");
