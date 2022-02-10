@@ -70,6 +70,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
 	 */
+	// Meta-  在Bean实例化之前调用， 可以用来自定义Bean的实例化。
+	// Meta- TODO 扩展点 InstantiationAwareBeanPostProcessor
 	@Nullable
 	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
 		return null;
@@ -90,6 +92,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessBeforeInstantiation
 	 */
+	// Meta- TODO 在bean的实例化之后，属性赋值之前调用。
+	// Meta- 这是在给定 bean 实例上执行自定义字段注入的理想回调，就在 Spring 的自动装配开始之前。
 	default boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
 		return true;
 	}
@@ -112,6 +116,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @since 5.1
 	 * @see #postProcessPropertyValues
 	 */
+	// Meta- 用以处理@Autowire、 @Resourc、 @Value等注解，
+	// Meta- 也可以自己实现注解来扩展
 	@Nullable
 	default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
 			throws BeansException {

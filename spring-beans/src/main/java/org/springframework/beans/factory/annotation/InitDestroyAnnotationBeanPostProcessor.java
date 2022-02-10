@@ -152,8 +152,11 @@ public class InitDestroyAnnotationBeanPostProcessor
 
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		// Meta- bean初始化前的操作。
+		// Meta- 找出@PostConstruct和@PreDestroy注解标注的方法，
 		LifecycleMetadata metadata = findLifecycleMetadata(bean.getClass());
 		try {
+			// Meta- 调用。
 			metadata.invokeInitMethods(bean, beanName);
 		}
 		catch (InvocationTargetException ex) {
@@ -221,7 +224,9 @@ public class InitDestroyAnnotationBeanPostProcessor
 			return this.emptyLifecycleMetadata;
 		}
 
+		// Meta- 初始化方法
 		List<LifecycleElement> initMethods = new ArrayList<>();
+		// Meta- 销毁方法。
 		List<LifecycleElement> destroyMethods = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
@@ -229,7 +234,11 @@ public class InitDestroyAnnotationBeanPostProcessor
 			final List<LifecycleElement> currInitMethods = new ArrayList<>();
 			final List<LifecycleElement> currDestroyMethods = new ArrayList<>();
 
+			// Meta- 传入目标类对象，遍历调用方法 -> 即 传入的lambda表达式对象，
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+				// Meta- 判断类上是否有 initAnnotationType注解类型。
+				// Meta- initAnnotationType 在其子类CommonAnnotationBeanPostProcessor.CommonAnnotationBeanPostProcessor()
+				// Meta- 在其子类的构造方法中 默认添加了@PostConstruct和@PreDestroy 两个注解。
 				if (this.initAnnotationType != null && method.isAnnotationPresent(this.initAnnotationType)) {
 					LifecycleElement element = new LifecycleElement(method);
 					currInitMethods.add(element);

@@ -70,8 +70,10 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 */
+	// Meta- 初始化之前
 	@Nullable
 	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		System.out.println("bean初始化之前: beanName -> " + beanName + "bean -> " + bean);
 		return bean;
 	}
 
@@ -98,6 +100,7 @@ public interface BeanPostProcessor {
 	 */
 	@Nullable
 	default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+		System.out.println("bean初始化之后: beanName -> " + beanName + "bean -> " + bean);
 		return bean;
 	}
 

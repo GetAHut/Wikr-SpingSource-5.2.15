@@ -412,6 +412,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object result = existingBean;
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// Meta- 循环调用BeanPostProcessor的postProcessBeforeInitialization()
 			Object current = processor.postProcessBeforeInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -485,14 +486,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+
+		// Meta- 1. 加载bean
+		// Meta- 将最开始存入BeanDefinition的beanClass解析成class
+		// Meta- 最开始存入的是一个String类型的className
+		// Meta- 返回一个class对象。
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
+			// Meta- 将返回的class对象重新设置给beanClass属性。
 			mbdToUse.setBeanClass(resolvedClass);
 		}
 
 		// Prepare method overrides.
 		try {
+			// Meta- 与@lookup注解有关，
 			mbdToUse.prepareMethodOverrides();
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -502,6 +510,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			// Meta- 2. 实例化前。
+			// Meta- TODO 第一个 POST-PROCESSOR 在bean的实例化之前。
+			// Meta- TODO 扩展点 -> 在bean实例化前 使用InstantiationAwareBeanPostProcessor处理beanClass
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				return bean;
@@ -513,6 +524,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// Meta- 3. 实例化bean
+			// Meta- 4. 属性赋值
+			// Meta- 5. 初始化前
+			// Meta- 6. 初始化
+			// Meta- 7. 初始化后
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -547,14 +563,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException {
 
+		// Meta- 3. 实例化bean
 		// Instantiate the bean.
+		// Meta- BeanWrapper -> bean包装器
 		BeanWrapper instanceWrapper = null;
+
 		if (mbd.isSingleton()) {
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// Meta- 创建bean实例。
+			// Meta- 推断构造方法。
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
+		// Meta- 获取具体的bean对象。
 		Object bean = instanceWrapper.getWrappedInstance();
 		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
@@ -562,9 +584,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Allow post-processors to modify the merged bean definition.
+		// Meta- 允许beanPostProcessors去修改合并后的BeanDefinition
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					// Meta- TODO 第二个 POST-PROCESSOR，bean实例化时。
+					// Meta- TODO 扩展点：是实例化bean的时候 调用MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition() 处理BeanDefinition
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -577,6 +602,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
+		// Meta- 循环依赖相关。
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -590,7 +616,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
+			// Meta- 4. bean的属性填充。
 			populateBean(beanName, mbd, instanceWrapper);
+			// Meta- 5. bean的初始化。
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -632,6 +660,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
+			// Meta- bean的销毁有关。
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -1094,6 +1123,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
+				// Meta- 调用扩展点MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()
 				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
 				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
 			}
@@ -1112,15 +1142,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object bean = null;
 		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
 			// Make sure bean class is actually resolved at this point.
+			// Meta- 实例化之前调用InstantiationAwareBeanPostProcessors.
+			// Meta- isSynthetic表示合成，如果某些bean是合成的， 则不会走InstantiationAwareBeanPostProcessors逻辑。
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
+					// Meta- 循环调用所有InstantiationAwareBeanPostProcessors类型的beanPostProcessor
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+					// Meta- 如果在调用InstantiationAwareBeanPostProcessors.postProcessBeforeInstantiation() 方法时返回了一个bean
+					// Meta- 也就是自扩展的一个bean，则继续调用BeanPostProcessor.postProcessAfterInitialization()
+					// Meta- 如果bean为空则不会调用
 					if (bean != null) {
+						// Meta- 循环调用BeanPostProcessor.postProcessAfterInitialization();
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
 			}
+			// Meta- 设置是否已经解析，bean不为空则标记为已解析。
 			mbd.beforeInstantiationResolved = (bean != null);
 		}
 		return bean;
@@ -1139,10 +1177,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+		// Meta- 循环已经注册过的beanPostProcessor
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
+			// Meta- 如果是InstantiationAwareBeanPostProcessor类型。
 			if (bp instanceof InstantiationAwareBeanPostProcessor) {
 				InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+				// Meta- 调用postProcessBeforeInstantiation()
 				Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);
+				// Meta- 如果有返回值 则直接返回， 不会去调后续的BeanPostProcessor
+				// Meta- 这里返回的对象不一定是beanClass的类型，没有这个判断， 所以可以返回一个任意的对象。
 				if (result != null) {
 					return result;
 				}
@@ -1384,6 +1427,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
+		// Meta- TODO 第三个 POST-PROCESSOR 在实例化之后，属性赋值之前。
+		// Meta- 此次调用的POST-PROCESSOR 与第一次调用的一致。
+		// Meta- TODO 扩展点 调用 InstantiationAwareBeanPostProcessor.postProcessAfterInstantiation()
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
@@ -1397,6 +1443,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
 
+		// Meta- Spring自带的依赖注入处理。
+		// Meta- @Bean(autowire = Autowire.BY_NAME) @Bean(autowire = Autowire.BY_TYPE)这类（已经过时，不常用）
 		int resolvedAutowireMode = mbd.getResolvedAutowireMode();
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
@@ -1411,22 +1459,35 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			pvs = newPvs;
 		}
 
+		// Meta- 再次判断是否有实现InstantiationAwareBeanPostProcessor的 POST-PROCESSOR
 		boolean hasInstAwareBpps = hasInstantiationAwareBeanPostProcessors();
 		boolean needsDepCheck = (mbd.getDependencyCheck() != AbstractBeanDefinition.DEPENDENCY_CHECK_NONE);
 
 		PropertyDescriptor[] filteredPds = null;
 		if (hasInstAwareBpps) {
 			if (pvs == null) {
+				// Meta- pvs -> beanDefinition的属性值。
+				// Meta- 可以在第二次调用调用MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()时
+				// Meta- 获取beanDefinition，通过beanDefinition.getPropertyValues().addPropertyValues("user", User.class);给属性赋值
+				// Meta- 所以在下面AutowiredAnnotationBeanPostProcessor中会对pvs判断，如果已经赋值过的 则跳过不会操作，
 				pvs = mbd.getPropertyValues();
 			}
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
+				// Meta- 通过循环所有的BeanPostProcessor ，调用实现了InstantiationAwareBeanPostProcessor.postProcessProperties()
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+					// Meta- TODO 第四个 POST-PROCESSOR 在属性赋值中的Spring自带的依赖注入处理结束之后。
+					// Meta- 此次调用的POST-PROCESSOR 与第一次、第三次调用的一致，方法不同。
+					// Meta- TODO 扩展点 调用实现了InstantiationAwareBeanPostProcessor.postProcessProperties()
+					// Meta- 此处用来处理AutowiredAnnotationBeanPostProcessor逻辑的
+					// Meta- 抵用AutowiredAnnotationBeanPostProcessor.postProcessProperties()，会给对象中有@Autowired注解的属性赋值。
+					// Meta- AutowiredAnnotationBeanPostProcessor中是不会处理已经赋值过的pvs。直接返回。
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 					if (pvsToUse == null) {
 						if (filteredPds == null) {
 							filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 						}
+						// Meta- 已经过期。
 						pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
 						if (pvsToUse == null) {
 							return;
@@ -1783,15 +1844,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			// Meta- 回调BeanNameAware 、BeanClassLoaderAware、 BeanFactoryAware 设置属性。
 			invokeAwareMethods(beanName, bean);
 		}
 
+		// Meta- 5. bean的初始化前。
+		// Meta- 会去处理@PostConstruct注解的方法。
+		// Meta- 因为BeanPostProcessor有一个实现类 ->  InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization()
+		// Meta- 方法上处理了@PostConstruct注解
+		// Meta- ApplicationContextAwareProcessor.postProcessBeforeInitialization()
+		// Meta- 判断bean是否是实现了各种Aware，是则按类型回调各种方法。
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			// Meta- 6. bean的初始化
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1803,6 +1872,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
+		// Meta- 最终创建的对象，如果是单例则放入单例池。
 		return wrappedBean;
 	}
 
@@ -1838,6 +1908,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBeanDefinition mbd)
 			throws Throwable {
 
+		// Meta- TODO 扩展点： InitializingBean
+		// Meta- 在bean的属性设置完成之后、初始化时调用。
 		boolean isInitializingBean = (bean instanceof InitializingBean);
 		if (isInitializingBean && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
 			if (logger.isTraceEnabled()) {
@@ -1860,6 +1932,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		if (mbd != null && bean.getClass() != NullBean.class) {
+			// Meta- 调用bean的init方法。
 			String initMethodName = mbd.getInitMethodName();
 			if (StringUtils.hasLength(initMethodName) &&
 					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&

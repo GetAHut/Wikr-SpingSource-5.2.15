@@ -212,6 +212,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		// Handle aliasing...
 		String resolvedName;
 		do {
+			// Meta- 别名map -> <key: alias, value : beanName>
+			// Meta- 因为别名可以有多个， 如果beanName为key， 那map中不能存储多个别名，会覆盖。
 			resolvedName = this.aliasMap.get(canonicalName);
 			if (resolvedName != null) {
 				canonicalName = resolvedName;

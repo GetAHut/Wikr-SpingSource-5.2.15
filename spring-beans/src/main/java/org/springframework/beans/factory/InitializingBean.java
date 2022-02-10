@@ -41,6 +41,7 @@ public interface InitializingBean {
 	 * @throws Exception in the event of misconfiguration (such as failure to set an
 	 * essential property) or if initialization fails for any other reason
 	 */
+	// Meta- 在bean的所有属性都已经设置了之后，允许调用此方法来验证，或者扩展操作。
 	void afterPropertiesSet() throws Exception;
 
 }

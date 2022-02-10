@@ -44,6 +44,7 @@ public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 	 * @param beanName the name of the bean
 	 * @see AbstractAutowireCapableBeanFactory#applyMergedBeanDefinitionPostProcessors
 	 */
+	// Meta- TODO 这里可以拿到在实例化时候的beanDefinition， 也就是说在实例化的时候 ，可以去修改BeanDefinition的部分属性。
 	void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName);
 
 	/**
@@ -54,6 +55,7 @@ public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 	 * @since 5.1
 	 * @see DefaultListableBeanFactory#resetBeanDefinition
 	 */
+	// Meta- 重置BeanDefinition
 	default void resetBeanDefinition(String beanName) {
 	}
 

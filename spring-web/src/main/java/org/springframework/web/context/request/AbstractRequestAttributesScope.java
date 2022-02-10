@@ -37,12 +37,22 @@ import org.springframework.lang.Nullable;
  */
 public abstract class AbstractRequestAttributesScope implements Scope {
 
+	/**
+	 * Meta- 如果Scope是Request和Session类型， 那么会调用此方法 通过beanName去获取bean
+	 * @param name the name of the object to retrieve
+	 * @param objectFactory the {@link ObjectFactory} to use to create the scoped
+	 * object if it is not present in the underlying storage mechanism
+	 * @return
+	 */
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
+		// Meta- 通过beanName去获取bean，
 		Object scopedObject = attributes.getAttribute(name, getScope());
 		if (scopedObject == null) {
+			// Meta- 如果获取的bean为空， 则通过传入的lambda表达式对象创建bean。
 			scopedObject = objectFactory.getObject();
+			// Meta- 在创建完对象后set回去。
 			attributes.setAttribute(name, scopedObject, getScope());
 			// Retrieve object again, registering it for implicit session attribute updates.
 			// As a bonus, we also allow for potential decoration at the getAttribute level.

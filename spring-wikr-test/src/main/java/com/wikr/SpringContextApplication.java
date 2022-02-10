@@ -3,6 +3,7 @@ package com.wikr;
 import com.wikr.aop.User;
 import com.wikr.entities.OrderService;
 import com.wikr.entities.Wikr;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -19,6 +20,7 @@ public class SpringContextApplication {
 //		Wikr wikr = (Wikr) context.getBean("wikr");
 //		OrderService bean = context.getBean(OrderService.class);
 //		System.out.println(wikr);
+
 
 		User bean = context.getBean(User.class);
 		bean.test();

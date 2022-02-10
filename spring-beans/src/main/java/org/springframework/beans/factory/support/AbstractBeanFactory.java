@@ -151,9 +151,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final List<StringValueResolver> embeddedValueResolvers = new CopyOnWriteArrayList<>();
 
 	/** BeanPostProcessors to apply. */
+	// Meta- beanPostProcessors 容器。
 	private final List<BeanPostProcessor> beanPostProcessors = new CopyOnWriteArrayList<>();
 
 	/** Indicates whether any InstantiationAwareBeanPostProcessors have been registered. */
+	// Meta- 是否注册InstantiationAwareBeanPostProcessors
 	private volatile boolean hasInstantiationAwareBeanPostProcessors;
 
 	/** Indicates whether any DestructionAwareBeanPostProcessors have been registered. */
@@ -203,11 +205,32 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return doGetBean(name, null, null, false);
 	}
 
+	/**
+	 * Meta- 获取bean， 可以通过执行的class类型去获取。
+	 *
+	 * @param name the name of the bean to retrieve
+	 * @param requiredType type the bean must match; can be an interface or superclass
+	 * @param <T>
+	 * @return
+	 * @throws BeansException
+	 */
 	@Override
 	public <T> T getBean(String name, Class<T> requiredType) throws BeansException {
 		return doGetBean(name, requiredType, null, false);
 	}
 
+	/**
+	 * Meta- Object... args -> 构造器参数， 在spring创建bean的时候 如果没有重写构造器，则会使用无参的构造器，
+	 * 		如果重写了构造器那么在 getBean()的时候 可以传入args，构造器参数。
+	 * 		当然如果是单例bean，那么在容器创建好的时候就已经创建了 依旧使用的是原有的构造器。
+	 * 		如果bean是原型的， 那么传入的构造器参数就可以起作用了。
+	 *
+	 * @param name the name of the bean to retrieve
+	 * @param args arguments to use when creating a bean instance using explicit arguments
+	 * (only applied when creating a new instance as opposed to retrieving an existing one)
+	 * @return
+	 * @throws BeansException
+	 */
 	@Override
 	public Object getBean(String name, Object... args) throws BeansException {
 		return doGetBean(name, null, args, false);
@@ -249,6 +272,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Meta- 这里分几种情况  1. &User 传进来的是一个FactoryBean, 2.user 一个正常的bean
 		// Meta- 如果是带有&符号的， 会将&去掉。即使有多个&&&&&&&&也能去掉。
 		// Meta- 单例池中只存了不带有&符号的beanName
+		// Meta- 如果传入的name是一个别名， 同样会去别名注册器中获取beanName
 		String beanName = transformedBeanName(name);
 		Object bean;
 
@@ -279,6 +303,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			// Check if bean definition exists in this factory.
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+			// Meta- 检查bean。如果当前BeanDefinition中没有则取父类BeanDefinition中去查找。
+			// Meta- 递归调用。 检查bean是否存在。
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -304,19 +330,32 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			try {
+				// Meta- 从合并之后的BeanDefinition中拿BeanDefinition。
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// Meta- 检查beanDefinition是不是抽象的。是则抛出异常。
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// Meta- 处理@DependsOn
+				// Meta- @DependsOn： 比如说User是一个需要被创建的bean， 但是他@DependsOn依赖了Order，那么就需要保证Order先创建好。
+				// Meta- 等待Order创建完成了之后 在来创建User
+				// Meta- 所以这里会出现一种循环依赖的情况。 User 依赖Order， 而在创建Order的时候又发现依赖User。
+				// Meta- 这种循环依赖是没有办法解决的。！
+				// Meta- dependsOn可以依赖多个，是一个数组。
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
+					// Meta- 循环遍历所依赖的bean -> 创建。
 					for (String dep : dependsOn) {
+						// Meta- 两者互相依赖，抛出异常。
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// Meta- 注册依赖关系。
+						// Meta- dep被beanName依赖了，存入dependentBeanMap中，key:dep,value:beanName
 						registerDependentBean(dep, beanName);
 						try {
+							// Meta- 创建依赖的bean
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -327,12 +366,52 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
-				//创建bean实例
+				// Meta- 创建bean实例
+
+				// Meta- 判断当前bean是不是单例的。
 				if (mbd.isSingleton()) {
 					//这个getSingleton 与第一次调用作用不同 方法也不同
+					// Meta- 去单例池中获取当前beanName的bean，
+					// Meta- getSingleton() -> 方法中传入一个lambda表达式。
+					// Meta- 注意： 这个表达式 不是在调用getSingleton()方法之前调用，而是一个对象参数，在方法内部调用。
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
-							//创建bean
+							// Meta- TODO 总览 -> 创建bean流程 createBean()方法中。
+							// Meta- 1. 加载beanClass -> resolveBeanClass() -> 通过beanClass返回一个Class对象。
+							// Meta- 2. 实例化前 -> 第一次调用BeanPostProcessor（这里也有可能是两次调用）（实例化前）
+							// Meat-			(1). InstantiationAwareBeanPostProcessor.postProcessBeforeInstantiation()
+							// Meat-			 	-> 可以通过此扩展点 将beanClass转换成自定义的Class类型的Bean
+							// Meta- 			如果在第一次调用返回了bean实例，则Spring认为已经完成了bean的实例化，则调用（2）的后置处理器。
+							// Meat-			(1.1). BeanPostProcessor.postProcessAfterInitialization()
+							// Meta- 3. 实例化bean -> doCreateBean() -> 实例化bean，在createBeanInstance()中推断实例化的构造方法。
+							// Meta- 			-> 第二次调用BeanPostProcessor （实例化时）
+							// Meta- 			(2). MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()
+							// Meta- 				-> 通过此扩展点可以对合并之后的BeanDefinition进行自定义设置部分属性值。（有些在加载类设置过的值不能修改。）
+							// Meta- 4. 实例化bean之后 -> populateBean()
+							// Meta- 			-> 第三次调用BeanPostProcessor （实例化bean之后，属性赋值之前。）
+							// Meta- 			(3). InstantiationAwareBeanPostProcessor.postProcessAfterInstantiation()
+							// Meta- 				-> 这是在给定 bean 实例上执行自定义字段注入的理想回调，就在 Spring 的自动装配开始之前。
+							// Meta- 5. 属性填充前 -> populateBean() -> Spring自带的依赖注入处理。
+							// Meta- 6. 属性填充时 -> Spring自带的依赖注入处理结束之后； 依据autowire = Autowire.BY_NAME / BY_TYPE (已过时)！
+							// Meta- 			-> 第四次调用BeanPostProcessor（在属性填充时，自带依赖注入处理之后，）
+							// Meta- 			(4). InstantiationAwareBeanPostProcessor.postProcessProperties()
+							// Meta- 				-> postProcessProperties() 尤其重要，这里会用来处理@Autowired、@Resource、@Value注解。
+							// Meta- 					-> InstantiationAwareBeanPostProcessor在Spring中有默认实现类AutowiredAnnotationBeanPostProcessor
+							// Meta- 					-> 也恶意自定义实现，用以来处理自定义的注解。
+							// Meta- 7. bean的初始化之前 -> initializeBean() -> 回调BeanNameAware 、BeanClassLoaderAware、 BeanFactoryAware 设置属性
+							// Meta- 			-> 第五次调用BeanPostProcessor （在bean的初始化之前）
+							// Meta- 			(5). BeanPostProcessor.postProcessBeforeInitialization();
+							// Meta- 				-> 其中一个实现类：InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization()
+							// Meta-					-> 会去处理@PostConstruct注解
+							// Meta- 				-> ApplicationContextAwareProcessor.postProcessBeforeInitialization()这个实现类，
+							// Meta-					-> 会去判断各种Aware， 符合在按照类型去回调Aware。
+							// Meta- 8. bean的初始化 -> invokeInitMethods()
+							// 							-> 在bean初始化的时候 会去判断是bean是否是InitializingBean类型，（扩展点）
+							// Meta-						-> 是则会去循环调用InitializingBean.afterPropertiesSet()。 可以自定义扩展在初始化时的操作。
+							// Meta- 					-> 在调用完上述方法之后， 回去处理InitMethods,也就是初始化方法（如果自己有指定init() 会在此处调用。）
+							// Meta-						-> 在第二次调用的BeanPostProcessor的时候 获取到的beanDefinition中就可以设置initMethods。
+							// Meta- 9.	bean的初始化后 -> 存入单例池，（循环依赖问题。）
+							// Meta- 10. bean的销毁。
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -346,6 +425,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 
+				// Meta- 判断当前bean是不是原型的。
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
@@ -359,11 +439,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
 
+				// Meta- 判断当前bean是除单例、原型之外的类型。
+				// Meta- @RequestScope -> request @SessionScope -> session... @see WebApplicationContext.class
+				// Meta-
 				else {
+					// Meta- 此处可以是request或者session还有其他类型的scope；
+					// Meta- 和单例bean有一点相似之处， 也就是说在同一个请求request中或者是同一个session中，通过beanName拿到的实例 应该是同一个。
+					// Meta- 如何保证呢：通过缓存，session和request中都有个map 可以通过getAttribute获取。
 					String scopeName = mbd.getScope();
 					if (!StringUtils.hasLength(scopeName)) {
 						throw new IllegalStateException("No scope name defined for bean ´" + beanName + "'");
 					}
+					// Meta- Scope 是一个接口 其实现有RequestScope、SessionScope；
+					// Meta- spring-mvc
 					Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
 						throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
@@ -372,6 +460,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						Object scopedInstance = scope.get(beanName, () -> {
 							beforePrototypeCreation(beanName);
 							try {
+								// Meta- 创建bean
 								return createBean(beanName, mbd, args);
 							}
 							finally {
@@ -1451,6 +1540,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected void checkMergedBeanDefinition(RootBeanDefinition mbd, String beanName, @Nullable Object[] args)
 			throws BeanDefinitionStoreException {
 
+		// Meta- 检查bean是不是抽象的。是则抛出异常。
 		if (mbd.isAbstract()) {
 			throw new BeanIsAbstractException(beanName);
 		}
@@ -1500,6 +1590,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			throws CannotLoadBeanClassException {
 
 		try {
+			// Meta- 判断beanClass是不是Class类型， 是则表示已经加载过了 ，直接返回当前类型。
+			// Meta- 如果不是则需要继续加载。
 			if (mbd.hasBeanClass()) {
 				return mbd.getBeanClass();
 			}
@@ -1508,6 +1600,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						() -> doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());
 			}
 			else {
+				// Meta- 加载beanClass，解析成Class
 				return doResolveBeanClass(mbd, typesToMatch);
 			}
 		}
@@ -1527,6 +1620,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private Class<?> doResolveBeanClass(RootBeanDefinition mbd, Class<?>... typesToMatch)
 			throws ClassNotFoundException {
 
+		// Meta- 获取类加载器。拿的是BeanFactory.beanClassLoader属性。
+		// Meta- 可以通过 ApplicationContext.getBeanFactory().setBeanClassLoader("");去设置自定义的类加载器。
+		// Meta- 不设置则使用Spring默认的类加载器。 ClassUtils.getDefaultClassLoader()
 		ClassLoader beanClassLoader = getBeanClassLoader();
 		ClassLoader dynamicLoader = beanClassLoader;
 		boolean freshResolve = false;
@@ -1547,8 +1643,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
+		// Meta- 获取当前的className，用以类加载器加载类。
 		String className = mbd.getBeanClassName();
 		if (className != null) {
+			// Meta- 调用Spring表达式解析。 可能直接返回一个对象。
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
@@ -1568,6 +1666,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// to avoid storing the resolved Class in the bean definition.
 				if (dynamicLoader != null) {
 					try {
+						// Meta- 通过类加载器加载类。
 						return dynamicLoader.loadClass(className);
 					}
 					catch (ClassNotFoundException ex) {

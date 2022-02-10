@@ -188,17 +188,24 @@ public abstract class ClassUtils {
 	public static ClassLoader getDefaultClassLoader() {
 		ClassLoader cl = null;
 		try {
+			// Meta- 优先获取当前线程上下文的类加载器。
+			// Meta- 应用场景有： 如在tomcat中，每一个war包，会对应一个tomcat自定义的类加载器。
+			// Meta- 通过Thread.currentThread().setContextClassLoader(""); 去设置线程上下文类加载器。
 			cl = Thread.currentThread().getContextClassLoader();
 		}
 		catch (Throwable ex) {
 			// Cannot access thread context ClassLoader - falling back...
 		}
+		//
 		if (cl == null) {
 			// No thread context class loader -> use class loader of this class.
+			// Meta- 如果没有拿到线程的类加载器， 就去获取当前类的类加载器。
 			cl = ClassUtils.class.getClassLoader();
 			if (cl == null) {
 				// getClassLoader() returning null indicates the bootstrap ClassLoader
 				try {
+					// Meta- 如果当前类是被Bootstrap ClassLoader加载器加载的就返回空。
+					// Meta- 去获取AppClassLoader （默认情况下）
 					cl = ClassLoader.getSystemClassLoader();
 				}
 				catch (Throwable ex) {

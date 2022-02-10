@@ -113,9 +113,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
 	/** Map between dependent bean names: bean name to Set of dependent bean names. */
+	// Meta- 某个bean被哪些bean依赖了。
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
 
 	/** Map between depending bean names: bean name to Set of bean names for the bean's dependencies. */
+	// Meta- 某个bean依赖了哪些bean
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
 
@@ -191,6 +193,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// Quick check for existing instance without full singleton lock
 		//一级缓存 单例池
 		//循环依赖处理
+		// Meta- singletonObjects -> 单例池
 		Object singletonObject = this.singletonObjects.get(beanName);
 		//证明是循环依赖
 		//以及缓存中没有， 但是在正在创建标志set中
@@ -266,6 +269,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				try {
 					//初始化
 					//调用函数式接口（钩子方法）---> 其实是调用creatBean() 创建
+					// Meta- 此处调用参数传入的lambda表达式 -> 用以创建bean
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
