@@ -309,6 +309,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	public Set<BeanDefinition> findCandidateComponents(String basePackage) {
 		// Meta- componentsIndex -> 索引 在resource/META-INF/下新建文件spring.components
+		// Meta- 这个文件有点类似于SpringBoot的spring.factory文件
 		// Meta- 在其中以key-value方式定义类名和注解名。这是告诉spring 直接来我这里找bean就可以了 ，
 		// Meta- 避免在项目中定义了太多的bean需要扫描很久的情况。（不常用）
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
@@ -509,7 +510,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the class qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
-		// Meta- 首选判断是否在excludeFilters过滤器中的类，是则排除
+		// Meta- 首先判断是否在excludeFilters过滤器中的类，是则排除
 		for (TypeFilter tf : this.excludeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return false;

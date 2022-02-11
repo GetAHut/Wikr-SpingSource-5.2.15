@@ -993,9 +993,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #doClose()
 	 * @see #registerShutdownHook()
 	 */
+	// Meta- 容器关闭。
 	@Override
 	public void close() {
 		synchronized (this.startupShutdownMonitor) {
+			// Meta- 容器关闭
 			doClose();
 			// If we registered a JVM shutdown hook, we don't need it anymore now:
 			// We've already explicitly closed the context.
@@ -1030,6 +1032,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Publish shutdown event.
+				// Meta- 发布容器关闭事件。
 				publishEvent(new ContextClosedEvent(this));
 			}
 			catch (Throwable ex) {
@@ -1047,6 +1050,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			}
 
 			// Destroy all cached singletons in the context's BeanFactory.
+			// Meta- 销毁bean
 			destroyBeans();
 
 			// Close the state of this context itself.
@@ -1078,6 +1082,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroySingletons()
 	 */
 	protected void destroyBeans() {
+		// Meta- 销毁容器中所有的单例bean
+		// Meta- 原型bean是直接被Jvm回收的， 容器中是没有存储。
+		// Meta- go to -> DefaultSingletonBeanRegistry.destroySingletons
 		getBeanFactory().destroySingletons();
 	}
 

@@ -107,6 +107,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private boolean singletonsCurrentlyInDestruction = false;
 
 	/** Disposable bean instances: bean name to disposable instance. */
+	// Meta- 所有带有销毁方法、的bean集合. Key -> beanName， value： bean的Adapter
 	private final Map<String, Object> disposableBeans = new LinkedHashMap<>();
 
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
@@ -557,9 +558,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 			disposableBeanNames = StringUtils.toStringArray(this.disposableBeans.keySet());
 		}
 		for (int i = disposableBeanNames.length - 1; i >= 0; i--) {
+			// Meta- 调用bean的destroy()方法
 			destroySingleton(disposableBeanNames[i]);
 		}
 
+		// Meta- 清除容器中的缓存。
 		this.containedBeanMap.clear();
 		this.dependentBeanMap.clear();
 		this.dependenciesForBeanMap.clear();
@@ -573,6 +576,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void clearSingletonCache() {
 		synchronized (this.singletonObjects) {
+			// Meta- 清除单例池缓存
 			this.singletonObjects.clear();
 			this.singletonFactories.clear();
 			this.earlySingletonObjects.clear();
@@ -596,6 +600,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		synchronized (this.disposableBeans) {
 			disposableBean = (DisposableBean) this.disposableBeans.remove(beanName);
 		}
+		// Meta- 销毁bean逻辑
+		// Meta- 调用destroy() 方法。
 		destroyBean(beanName, disposableBean);
 	}
 
@@ -608,6 +614,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	protected void destroyBean(String beanName, @Nullable DisposableBean bean) {
 		// Trigger destruction of dependent beans first...
 		Set<String> dependencies;
+		// Meta- 某个bean被其他的bean依赖了， 如果自己要销毁，那么其他的bean也需要先被销毁。
 		synchronized (this.dependentBeanMap) {
 			// Within full synchronization in order to guarantee a disconnected Set
 			dependencies = this.dependentBeanMap.remove(beanName);
@@ -624,6 +631,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// Actually destroy the bean now...
 		if (bean != null) {
 			try {
+				// Meta- 调用destroy()
+				// Meta- @see DisposableBeanAdapter.destroy
 				bean.destroy();
 			}
 			catch (Throwable ex) {

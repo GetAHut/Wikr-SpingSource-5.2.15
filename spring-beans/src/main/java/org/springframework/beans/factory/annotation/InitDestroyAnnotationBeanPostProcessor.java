@@ -195,6 +195,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 
 	@Override
 	public boolean requiresDestruction(Object bean) {
+		// Meta- 处理销毁注解逻辑
+		// Meta- 此方法中是和初始化init方法逻辑一起处理。
 		return findLifecycleMetadata(bean.getClass()).hasDestroyMethods();
 	}
 
@@ -254,6 +256,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 				}
 			});
 
+			// Meta- 通过do-while循环 ，获取子类 、所有父类的初始化、销毁方法。
+			// Meta- 其中在init方法中， 父类init方法在子类的前面 。
 			initMethods.addAll(0, currInitMethods);
 			destroyMethods.addAll(currDestroyMethods);
 			targetClass = targetClass.getSuperclass();

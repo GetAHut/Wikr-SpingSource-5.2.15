@@ -159,6 +159,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	@SuppressWarnings("unchecked")
 	public AutowiredAnnotationBeanPostProcessor() {
+
+		// Meta- 在类初始化的时候 添加处理Autowired和Value注解
 		this.autowiredAnnotationTypes.add(Autowired.class);
 		this.autowiredAnnotationTypes.add(Value.class);
 		try {
@@ -242,7 +244,11 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 
 	@Override
+	// Meta- 这个方法是实现MergedBeanDefinitionPostProcessor接口，而此接口在bean实例化的时候调用。
+	// Meta- 是在InstantiationAwareBeanPostProcessor.postProcessProperties() 方法之前执行
+	// Meta- postProcessProperties() 是在属性赋值的时候执行。
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// Meta- 获取beanDefinition有哪些属性有注入点。（Autowired注解）
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}
@@ -394,8 +400,14 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// Meta- 找出所有的注入点。
+		// Meta- 在上一次的BeanPostProcessor已经调用过在缓存中
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			// Meta- 开始属性赋值
+			// Meta- 将所有的注入点封装成了InjectionMetadata对象， 而这里处理的是Autowired和Value注解对应的注入点。
+			// Meta- @see AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement.inject()
+			// Meta- @see AutowiredAnnotationBeanPostProcessor.AutowiredMethodElement.inject()
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -443,6 +455,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		// Meta- 从缓存中取，开始肯定是为空
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
@@ -451,6 +464,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// Meta- 开始解析并构造注入点（遍历属性 判断是否有Autowired注解）
 					metadata = buildAutowiringMetadata(clazz);
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
@@ -460,31 +474,46 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 	private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
+
+		// Meta- 如果是String...等基本数据类型的 跳过 不需要将其构建成注入点。
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
 			return InjectionMetadata.EMPTY;
 		}
 
+		// Meta- 最终构建的注入点集合
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
+		// Meta- 双层循环  do-while for
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
+			// Meta- doWithLocalFields() -> 循环遍历属性， 调用lambda表达式对象方法，
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				// Meta- findAutowiredAnnotation -> 判断是否满足注入点的条件  有Autowired注解或者有Value注解 Inject注解
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
+					// Meta- 如果被Autowired标注的属性 是静态的 则跳过。
+					// Meta- 如果是静态属性， 然后bean是原型的， 且属性也是原型的。
+					// Meta- 那么获取两次bean， 两次打印第一次拿到的bean属性值不同。值会发生变化
 					if (Modifier.isStatic(field.getModifiers())) {
 						if (logger.isInfoEnabled()) {
 							logger.info("Autowired annotation is not supported on static fields: " + field);
 						}
 						return;
 					}
+
+					// Meta- 判断Autowired注解中的required是否是true还是false,如果为true， 但是容器找不到这个bean 就会报错。
 					boolean required = determineRequiredStatus(ann);
+					// Meta- 被判定为是注入点的字段加入当前集合。
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
 			});
 
+			// Meta- doWithLocalMethods() -> 遍历所有的方法。 逻辑与上述遍历字段类似
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+				// Meta- 判断是否是桥接方法 如果是桥接方法 就跳过， 或者根据桥接方法去找到被桥接的方法
+				// Meta- 桥接方法 ->
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
 					return;
@@ -497,23 +526,31 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						}
 						return;
 					}
+					// Meta- set方法最好有参数。 没有参数也能通过
 					if (method.getParameterCount() == 0) {
 						if (logger.isInfoEnabled()) {
 							logger.info("Autowired annotation should only be used on methods with parameters: " +
 									method);
 						}
 					}
+
+					// Meta- 针对Autowired注解判断required值
 					boolean required = determineRequiredStatus(ann);
 					PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 					currElements.add(new AutowiredMethodElement(method, required, pd));
 				}
 			});
 
+			// Meta- 汇总属性
 			elements.addAll(0, currElements);
+			// Meta- 获取父类
 			targetClass = targetClass.getSuperclass();
 		}
+		// Meta- 找到当前类以及其父类所有的注解 都找出来之后，
+		// Meta- 添加到集合中
 		while (targetClass != null && targetClass != Object.class);
 
+		// Meta- 封装成一个对象。
 		return InjectionMetadata.forElements(elements, clazz);
 	}
 
@@ -637,9 +674,11 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				}
 			}
 			else {
+				// Meta- 找到对应属性的值，
 				value = resolveFieldValue(field, bean, beanName);
 			}
 			if (value != null) {
+				// Meta- 通过反射给属性赋值
 				ReflectionUtils.makeAccessible(field);
 				field.set(bean, value);
 			}
@@ -702,6 +741,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+			// Meta- 如果咋beanDefinition中手动设置了属性的值， 保存在pvs中
+			// Meta- 这里判断存在就直接跳过
 			if (checkPropertySkipping(pvs)) {
 				return;
 			}

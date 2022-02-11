@@ -103,6 +103,8 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 */
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		//调用当前无参构造器
+		// Meta- 初始化了读取器
+		// Meta- 初始化了扫描器
 		this();
 		//注册 配置类
 		register(componentClasses);

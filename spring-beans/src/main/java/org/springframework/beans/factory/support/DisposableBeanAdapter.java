@@ -180,6 +180,8 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	public void destroy() {
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
+				// Meta- TODO 第七次调用POST-PROCESSOR (在bean的销毁前)
+				// Meta- TODO 扩展点 DestructionAwareBeanPostProcessor.postProcessBeforeDestruction() 处理自定义的bean销毁逻辑。
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
 		}
@@ -211,6 +213,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		}
 
 		if (this.destroyMethod != null) {
+			// Meta- 调用销毁方法
 			invokeCustomDestroyMethod(this.destroyMethod);
 		}
 		else if (this.destroyMethodName != null) {
@@ -269,6 +272,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				});
 				try {
 					AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () ->
+							// Meta- 调用销毁方法销毁bean
 						destroyMethod.invoke(this.bean, args), this.acc);
 				}
 				catch (PrivilegedActionException pax) {
@@ -322,9 +326,11 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	 * @param beanDefinition the corresponding bean definition
 	 */
 	public static boolean hasDestroyMethod(Object bean, RootBeanDefinition beanDefinition) {
+		// Meta- 判断bean是否实现了有关bean销毁的两个接口。
 		if (bean instanceof DisposableBean || bean instanceof AutoCloseable) {
 			return true;
 		}
+		// Meta- 判断bean是否定义了销毁的方法。
 		return inferDestroyMethodIfNecessary(bean, beanDefinition) != null;
 	}
 
@@ -344,9 +350,14 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	 */
 	@Nullable
 	private static String inferDestroyMethodIfNecessary(Object bean, RootBeanDefinition beanDefinition) {
+		// Meta- 可以通过beanDefinition设置销毁方法。
 		String destroyMethodName = beanDefinition.resolvedDestroyMethodName;
 		if (destroyMethodName == null) {
+			// Meta- 拿到销毁方法的名称
 			destroyMethodName = beanDefinition.getDestroyMethodName();
+			// Meta- 如果在beanDefinition中设置的销毁方法名称为 "(inferred)"
+			// Meta- beanDefinition.setDestroyMethodName("(inferred)")
+			// Meta- 则会去判断当前bean中是否含有 close()  或者shutdown() 两个方法 ， 有则调用。此时不需要去实现接口或者添加注解。
 			if (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName) ||
 					(destroyMethodName == null && bean instanceof AutoCloseable)) {
 				// Only perform destroy method inference or Closeable detection
@@ -354,10 +365,12 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				destroyMethodName = null;
 				if (!(bean instanceof DisposableBean)) {
 					try {
+						// Meta- 处理close()
 						destroyMethodName = bean.getClass().getMethod(CLOSE_METHOD_NAME).getName();
 					}
 					catch (NoSuchMethodException ex) {
 						try {
+							// Meta- 处理shutdown()
 							destroyMethodName = bean.getClass().getMethod(SHUTDOWN_METHOD_NAME).getName();
 						}
 						catch (NoSuchMethodException ex2) {
@@ -379,6 +392,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	public static boolean hasApplicableProcessors(Object bean, List<BeanPostProcessor> postProcessors) {
 		if (!CollectionUtils.isEmpty(postProcessors)) {
 			for (BeanPostProcessor processor : postProcessors) {
+				// Meta- TODO
 				if (processor instanceof DestructionAwareBeanPostProcessor) {
 					DestructionAwareBeanPostProcessor dabpp = (DestructionAwareBeanPostProcessor) processor;
 					if (dabpp.requiresDestruction(bean)) {

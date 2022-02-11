@@ -253,6 +253,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
 
 		// Meta- 开始扫描
+		// Meta- 将符合条件的class生成beanDefinition
 		doScan(basePackages);
 
 		// Register annotation config processors, if necessary.
@@ -290,7 +291,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 				candidate.setScope(scopeMetadata.getScopeName());
 				// Meta- 设置beanName：
 				// Meta- beanName: 判断分两步： 1. 如果在注解上value有值，则取其值，2. 如果注解上没有，则默认首字母小写设置beanName
-				// Meta- @see: org.springframework.context.annotation.AnnotationBeanNameGenerator#buildDefaultBeanName
+				// Meta- @see: AnnotationBeanNameGenerator#buildDefaultBeanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 
 				if (candidate instanceof AbstractBeanDefinition) {

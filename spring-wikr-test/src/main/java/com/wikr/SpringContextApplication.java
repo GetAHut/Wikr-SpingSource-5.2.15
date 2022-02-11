@@ -31,6 +31,9 @@ public class SpringContextApplication {
 		// 注册beanDefinition
 		context.registerBeanDefinition("user", beanDefinition);
 
+		// Meta- 容器销毁方法。
+		context.close();
+
 
 	}
 }

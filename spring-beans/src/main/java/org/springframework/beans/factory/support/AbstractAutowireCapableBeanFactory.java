@@ -617,6 +617,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object exposedObject = bean;
 		try {
 			// Meta- 4. bean的属性填充。
+			// Meta- 依赖注入 1. 处理Spring自带的依赖注入（ByName， ByType...）
+			// Meta- 2， 处理@Autowired @Resource @Value
 			populateBean(beanName, mbd, instanceWrapper);
 			// Meta- 5. bean的初始化。
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
@@ -660,7 +662,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
-			// Meta- bean的销毁有关。
+			// Meta- bean的销毁有关。此处有关销毁 仅仅是将定义了销毁方法的bean保存起来。在容器调用close()方法的时候 再去处理。
+			// Meta- Spring触发bean销毁的机制
+			// Meta- 1. ApplicationContext.registerShutdownHook();
+			// Meta- 2. ApplicationContext.close();
+			// Meta- 第一种是钩子方法，两种原理都是去去调用 doClose()
+			// Meta- DisposableBean、AutoCloseable两个接口实现方法， 或者@PreDestory
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -1154,6 +1161,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// Meta- 如果bean为空则不会调用
 					if (bean != null) {
 						// Meta- 循环调用BeanPostProcessor.postProcessAfterInitialization();
+						// Meta- AOP
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
@@ -1446,13 +1454,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Meta- Spring自带的依赖注入处理。
 		// Meta- @Bean(autowire = Autowire.BY_NAME) @Bean(autowire = Autowire.BY_TYPE)这类（已经过时，不常用）
 		int resolvedAutowireMode = mbd.getResolvedAutowireMode();
+		// Meta- 如果是byType：则是通过set方法参数的类型去找bean
+		// Meya- 如果是byName：则是通过set方法的截取set后剩下的名字去找bean
+		// Meta- 两者找到属性对应的bean之后都没有去做赋值操作。而是存放到pvsMap中去。
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
+			// Meta- 通过byName进行属性注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_NAME) {
 				autowireByName(beanName, mbd, bw, newPvs);
 			}
 			// Add property values based on autowire by type if applicable.
+			// Meta- 通过byType进行属性注入
 			if (resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 				autowireByType(beanName, mbd, bw, newPvs);
 			}
@@ -1479,8 +1492,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// Meta- TODO 第四个 POST-PROCESSOR 在属性赋值中的Spring自带的依赖注入处理结束之后。
 					// Meta- 此次调用的POST-PROCESSOR 与第一次、第三次调用的一致，方法不同。
 					// Meta- TODO 扩展点 调用实现了InstantiationAwareBeanPostProcessor.postProcessProperties()
-					// Meta- 此处用来处理AutowiredAnnotationBeanPostProcessor逻辑的
-					// Meta- 抵用AutowiredAnnotationBeanPostProcessor.postProcessProperties()，会给对象中有@Autowired注解的属性赋值。
+					// Meta- 此处用来处理AutowiredAnnotationBeanPostProcessor、用CommonAnnotationBeanPostProcessor逻辑的
+					// Meta- 用AutowiredAnnotationBeanPostProcessor.postProcessProperties()，会给对象中有@Autowired注解和@Value的属性赋值。
+					// Meta- 用CommonAnnotationBeanPostProcessor.postProcessProperties()，会给对象中有@Resource注解的属性赋值。
 					// Meta- AutowiredAnnotationBeanPostProcessor中是不会处理已经赋值过的pvs。直接返回。
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 					if (pvsToUse == null) {
@@ -1505,6 +1519,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		if (pvs != null) {
+			// Meta- 属性赋值 将pvs中的 设置到bw中去。
+			// Meta- 如果一个User上的属性OrderService，存在@Autowired ，且在MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()方法中
+			// Meta- 手动通过beanDefinition.getPropertyValues().addPropertyValue("order", OrderService.class);
+			// Meta- 那么会先通过@Autowired注解进行赋值， 之后会被postProcessMergedBeanDefinition()此方法的自定义值覆盖
+			// Meta- 执行顺序 -> 先执行postProcessMergedBeanDefinition()，会将pvs的值保存，
+			// Meta- 执行顺序 -> 再去解析@Autowired，遍历所有注入点，然后赋值。
+			// Meta- 执行顺序 -> 属性赋值最后再调用 applyPropertyValues() 将pvs中的属性值复制给bean 也就是会覆盖解析@Autowired时赋予属性的值。
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
 	}
@@ -1521,11 +1542,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void autowireByName(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
 
+		// Meta- 获取bean的可用属性。
+		// Meta- 可用属性  是指有set方法的属性。
+		// Meta- 拿到需要注入的属性名。（set方法上的名字。）
 		String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
 		for (String propertyName : propertyNames) {
+			// Meta- 判断容器中是否有这个属性的beanName
 			if (containsBean(propertyName)) {
+				// Meta- 拿到对应的bean
 				Object bean = getBean(propertyName);
+				// Meta - 添加到pvs属性集合中去。
 				pvs.add(propertyName, bean);
+				// Meta- 注册现在的bean被这个属性依赖了
 				registerDependentBean(propertyName, beanName);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Added autowiring by name from bean name '" + beanName +
@@ -1555,15 +1583,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void autowireByType(
 			String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
 
+		// Meta- TypeConverter -> spring封装的类型转换器
 		TypeConverter converter = getCustomTypeConverter();
 		if (converter == null) {
 			converter = bw;
 		}
 
 		Set<String> autowiredBeanNames = new LinkedHashSet<>(4);
+		// Meta- 获取bean中所有有set/get方法的属性。
 		String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
 		for (String propertyName : propertyNames) {
 			try {
+				// Meta- 获取属性描述其
 				PropertyDescriptor pd = bw.getPropertyDescriptor(propertyName);
 				// Don't try autowiring by type for type Object: never makes sense,
 				// even if it technically is a unsatisfied, non-simple property.
@@ -1572,11 +1603,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// Do not allow eager init for type matching in case of a prioritized post-processor.
 					boolean eager = !(bw.getWrappedInstance() instanceof PriorityOrdered);
 					DependencyDescriptor desc = new AutowireByTypeDependencyDescriptor(methodParam, eager);
+
+					// Meta- resolveDependency() ->  在@Autowired注解中也是调用了此方法。到时在详细说明。
 					Object autowiredArgument = resolveDependency(desc, beanName, autowiredBeanNames, converter);
 					if (autowiredArgument != null) {
+						// Meta- 将满足条件的属性添加到pvs中
 						pvs.add(propertyName, autowiredArgument);
 					}
 					for (String autowiredBeanName : autowiredBeanNames) {
+						// Meta- 注册这个bean被这个属性依赖了。
 						registerDependentBean(autowiredBeanName, beanName);
 						if (logger.isTraceEnabled()) {
 							logger.trace("Autowiring by type from bean name '" + beanName + "' via property '" +
@@ -1605,8 +1640,17 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected String[] unsatisfiedNonSimpleProperties(AbstractBeanDefinition mbd, BeanWrapper bw) {
 		Set<String> result = new TreeSet<>();
 		PropertyValues pvs = mbd.getPropertyValues();
+		// Meta- PropertyDescriptor -> 属性描述其。通过bean的包装类去获取bean中的属性。且有对应的set get方法。
+		// Meta- 可以条件断点调试 核心是set方法， 如果没有属性，只有set方法也可以被解析出来。
+		// Meta- 解析出来的class属性 是因为有一个默认的getClass()方法。
 		PropertyDescriptor[] pds = bw.getPropertyDescriptors();
 		for (PropertyDescriptor pd : pds) {
+			// Meta-  判断属性中至少有一个set方法 才能返回bean的属性名
+			// Meta- getWriteMethod() ->  获取set方法。
+			// Meta- pvs.contains(pd.getName()) 如果在pvs中有这个属性就跳过这个属性
+			// Meta- pvs可以在BeanPostProcessor后置处理器中自定义设置。
+			// Meta- !BeanUtils.isSimpleProperty(pd.getPropertyType()) 如果是简单类型 这里跳过不去处理
+			// Meta- 如果是Autowired注解会处理这种简单类型的属性。
 			if (pd.getWriteMethod() != null && !isExcludedFromDependencyCheck(pd) && !pvs.contains(pd.getName()) &&
 					!BeanUtils.isSimpleProperty(pd.getPropertyType())) {
 				result.add(pd.getName());
