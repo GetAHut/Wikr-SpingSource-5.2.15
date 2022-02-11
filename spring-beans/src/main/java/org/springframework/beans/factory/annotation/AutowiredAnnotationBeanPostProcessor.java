@@ -660,10 +660,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			this.required = required;
 		}
 
+		// Meta- 处理字段对应的注入点
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 			Field field = (Field) this.member;
 			Object value;
+			// Meta- 缓存
 			if (this.cached) {
 				try {
 					value = resolvedCachedArgument(beanName, this.cachedFieldValue);
@@ -686,13 +688,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		@Nullable
 		private Object resolveFieldValue(Field field, Object bean, @Nullable String beanName) {
+			// Meta- 对应字段的依赖描述
+			// Meta- this.required : 表示@Autowired注解上required属性的值。
 			DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
 			desc.setContainingClass(bean.getClass());
+
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 			Assert.state(beanFactory != null, "No BeanFactory available");
 			TypeConverter typeConverter = beanFactory.getTypeConverter();
 			Object value;
 			try {
+
+				// Meta- 获取对应属性值的bean
 				value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 			}
 			catch (BeansException ex) {
@@ -739,6 +746,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			this.required = required;
 		}
 
+		// Meta- 处理方法上对面的注入点。
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 			// Meta- 如果咋beanDefinition中手动设置了属性的值， 保存在pvs中
@@ -747,7 +755,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				return;
 			}
 			Method method = (Method) this.member;
+			// Meta- 因为方法上的参数可能不止一个， 所以这里定义的数组
+			// Meta- arguments： 就是存储的方法上参数的值。
 			Object[] arguments;
+			// Meta- 缓存
 			if (this.cached) {
 				try {
 					arguments = resolveCachedArguments(beanName);
@@ -758,11 +769,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				}
 			}
 			else {
+				// Meta- 获取方法参数的值
 				arguments = resolveMethodArguments(method, bean, beanName);
 			}
 			if (arguments != null) {
 				try {
 					ReflectionUtils.makeAccessible(method);
+					// Meta- 通过反射给方法参数赋值。
 					method.invoke(bean, arguments);
 				}
 				catch (InvocationTargetException ex) {
@@ -786,11 +799,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		@Nullable
 		private Object[] resolveMethodArguments(Method method, Object bean, @Nullable String beanName) {
+			// Meta- 获取方法参数个数
 			int argumentCount = method.getParameterCount();
+			// Meta- 存放参数对应值的数组。
 			Object[] arguments = new Object[argumentCount];
+
+			// Meta- 构建依赖描述数组。
 			DependencyDescriptor[] descriptors = new DependencyDescriptor[argumentCount];
+
 			Set<String> autowiredBeans = new LinkedHashSet<>(argumentCount);
 			Assert.state(beanFactory != null, "No BeanFactory available");
+
+			// Meta- 类型转换器
 			TypeConverter typeConverter = beanFactory.getTypeConverter();
 			for (int i = 0; i < arguments.length; i++) {
 				MethodParameter methodParam = new MethodParameter(method, i);
@@ -798,6 +818,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				currDesc.setContainingClass(bean.getClass());
 				descriptors[i] = currDesc;
 				try {
+					// Meta- 根据方法参数的名称来获取对应的bean
 					Object arg = beanFactory.resolveDependency(currDesc, beanName, autowiredBeans, typeConverter);
 					if (arg == null && !this.required) {
 						arguments = null;

@@ -51,6 +51,9 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 	@Override
 	@Nullable
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+		// Meta- isLazy-> 判断是否有@Lazy  在属性上，或者在方法参数前面。
+		// Meta- 如果不是返回null
+		// Meta- 如果是@Lazy 懒加载的 则返回一个代理对象bean。
 		return (isLazy(descriptor) ? buildLazyResolutionProxy(descriptor, beanName) : null);
 	}
 
@@ -121,12 +124,14 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 			}
 		};
 
+		// Meta- 代理工厂。
 		ProxyFactory pf = new ProxyFactory();
 		pf.setTargetSource(ts);
 		Class<?> dependencyType = descriptor.getDependencyType();
 		if (dependencyType.isInterface()) {
 			pf.addInterface(dependencyType);
 		}
+		// Meta- 返回一个代理对象。
 		return pf.getProxy(dlbf.getBeanClassLoader());
 	}
 
