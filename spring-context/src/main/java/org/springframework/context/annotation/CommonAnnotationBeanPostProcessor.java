@@ -313,8 +313,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// Meta- 找到类上由@Resource注解的属性和方法。
+		// Meta- 与@Autowired类似。 resource生成的是ResourceElement对象，
+		// Meta- 这个对象中没有inject()  而是在其父类中。
 		InjectionMetadata metadata = findResourceMetadata(beanName, bean.getClass(), pvs);
 		try {
+			// Meta- 调用inject
+			// Meta- @see InjectionMetadata.InjectedElement.inject
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (Throwable ex) {
@@ -344,6 +349,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// Meta- 获取@Resource注入点 生成ResourceElement对象封装到InjectionMetadata中
 					metadata = buildResourceMetadata(clazz);
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
@@ -513,17 +519,25 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		Set<String> autowiredBeanNames;
 		String name = element.name;
 
+		// Meta- 是否实现了AutowireCapableBeanFactory
 		if (factory instanceof AutowireCapableBeanFactory) {
 			AutowireCapableBeanFactory beanFactory = (AutowireCapableBeanFactory) factory;
 			DependencyDescriptor descriptor = element.getDependencyDescriptor();
+
+			// Meta- 从这里可以看出@Resource是通过name去找，name没有找到在通过type去找。
+			// Meta- fallbackToDefaultTypeMatch: 根据name匹配是否失败了， 失败了则进行type匹配。
+			// Meta- isDefaultName: 判断是否是默认的名字。也就是说 在@Resource注解上没有指定name。默认的name就是属性的名字。
+			// Meta- factory.containsBean(name): 根据name去beanFactory中找对应的bean
 			if (this.fallbackToDefaultTypeMatch && element.isDefaultName && !factory.containsBean(name)) {
 				autowiredBeanNames = new LinkedHashSet<>();
+				// Meta- 获取对应的resouce
 				resource = beanFactory.resolveDependency(descriptor, requestingBeanName, autowiredBeanNames, null);
 				if (resource == null) {
 					throw new NoSuchBeanDefinitionException(element.getLookupType(), "No resolvable resource object");
 				}
 			}
 			else {
+				// Meta- 如果工厂 中有这个name的bean  直接getBean()
 				resource = beanFactory.resolveBeanByName(name, descriptor);
 				autowiredBeanNames = Collections.singleton(name);
 			}
@@ -617,23 +631,29 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		public ResourceElement(Member member, AnnotatedElement ae, @Nullable PropertyDescriptor pd) {
 			super(member, pd);
 			Resource resource = ae.getAnnotation(Resource.class);
+			// Meta- @Resource注解的两个属性
 			String resourceName = resource.name();
 			Class<?> resourceType = resource.type();
 			this.isDefaultName = !StringUtils.hasLength(resourceName);
 			if (this.isDefaultName) {
+				// Meta- 如果注解没有指定 name。
+				// Meta- 则使用setXxx或者属性的名字 与@Autowired一致、
 				resourceName = this.member.getName();
 				if (this.member instanceof Method && resourceName.startsWith("set") && resourceName.length() > 3) {
 					resourceName = Introspector.decapitalize(resourceName.substring(3));
 				}
 			}
+			// Meta- 如果注解指定了name的值 ，则根据名字找bean 填充。
 			else if (embeddedValueResolver != null) {
 				resourceName = embeddedValueResolver.resolveStringValue(resourceName);
 			}
 			if (Object.class != resourceType) {
+				// Meta- 检查注解的属性中type的值 是否和字段属性 或者方法参数值的类型一致。
 				checkResourceType(resourceType);
 			}
 			else {
 				// No resource type specified... check field/method.
+				// Meta-
 				resourceType = getResourceType();
 			}
 			this.name = (resourceName != null ? resourceName : "");
@@ -641,11 +661,15 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 			String lookupValue = resource.lookup();
 			this.mappedName = (StringUtils.hasLength(lookupValue) ? lookupValue : resource.mappedName());
 			Lazy lazy = ae.getAnnotation(Lazy.class);
+			// Meta- 判断lazy
 			this.lazyLookup = (lazy != null && lazy.value());
 		}
 
+		// Meta- 对Resource注解 进行依赖注入、
 		@Override
 		protected Object getResourceToInject(Object target, @Nullable String requestingBeanName) {
+			// Meta- 如果注解上有@Lazy  则构建一个代理对象 在使用的时候getBean
+			// Meta- lazy逻辑与Autowired类似。
 			return (this.lazyLookup ? buildLazyResourceProxy(this, requestingBeanName) :
 					getResource(this, requestingBeanName));
 		}

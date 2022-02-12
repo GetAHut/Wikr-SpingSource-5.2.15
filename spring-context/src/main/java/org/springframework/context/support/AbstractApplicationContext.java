@@ -533,7 +533,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
-				//调用beanFactory的后置处理器， 将class扫描成beanDefinition
+				// 调用beanFactory的后置处理器， 将class扫描成beanDefinition
 				// Meta- 1. 调用构造方法中初始化的scanner.scan()
 				// Meta- 2. 将扫描的class文件按照要求注册成BeanDefinition，并保存beanName
 				invokeBeanFactoryPostProcessors(beanFactory);
@@ -563,6 +563,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Meta- 1. 创建所有的非懒加载单例bean。
 				// Meta- 2. 合并scan得到的beanDefinition(父子beanDefinition)
 				// Meta- 2. 处理FactoryBean
+				// Meta- 3. 属性注入 @Autowired @Resource @Value 等注解处理
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -896,6 +897,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Instantiate all remaining (non-lazy-init) singletons.
 		// Meta- 实例化所有非懒加载的bean
+		// Meta- 属性注入-依赖注入-循环依赖处理。
 		beanFactory.preInstantiateSingletons();
 	}
 

@@ -399,6 +399,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Meta- 				-> postProcessProperties() 尤其重要，这里会用来处理@Autowired、@Resource、@Value注解。
 							// Meta- 					-> InstantiationAwareBeanPostProcessor在Spring中有默认实现类AutowiredAnnotationBeanPostProcessor
 							// Meta- 					-> 也恶意自定义实现，用以来处理自定义的注解。
+							// Meta- 			-> 第五次调用BeanPostProcessor（在处理循环依赖时）
+							// Meta-			(). AbstractAutoProxyCreator.getEarlyBeanReference()
+							// Meta-				-> 三级缓存存储执行逻辑，发生循环依赖调用， 如需要AOP的bean提前进行AOP并保存。
+							// Meta-
 							// Meta- 7. bean的初始化之前 -> initializeBean() -> 回调BeanNameAware 、BeanClassLoaderAware、 BeanFactoryAware 设置属性
 							// Meta- 			-> 第五次调用BeanPostProcessor （在bean的初始化之前）
 							// Meta- 			(5). BeanPostProcessor.postProcessBeforeInitialization();
@@ -411,16 +415,18 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Meta-						-> 是则会去循环调用InitializingBean.afterPropertiesSet()。 可以自定义扩展在初始化时的操作。
 							// Meta- 					-> 在调用完上述方法之后， 回去处理InitMethods,也就是初始化方法（如果自己有指定init() 会在此处调用。）
 							// Meta-						-> 在第二次调用的BeanPostProcessor的时候 获取到的beanDefinition中就可以设置initMethods。
-							// Meta- 9.	bean的初始化后 -> 存入单例池，（循环依赖问题。）
+							// Meta- 9.	bean的初始化后 -> 存入单例池，（循环依赖问题。） AOP
+							// Meta- 			  -> 第六次调用BeanPostProcessor （bean初始化后）
+							// Meta- 			(6).
 							// Meta- 10. bean的销毁准备。 -> AbstractBeanFactory#registerDisposableBeanIfNecessary
 							// Meta- 						-> 将所有实现销毁接口、销毁注解方法的bean放到map中 等待调用contex.close()方法是调用。
-							// Meta- 			  -> 第六次调用BeanPostProcessor （在bean的销毁时）
-							// Meta- 			(6). DestructionAwareBeanPostProcessor.requiresDestruction() 判断一个bean是否需要销毁。自定义销毁逻辑
+							// Meta- 			  -> 第七次调用BeanPostProcessor （在bean的销毁时）
+							// Meta- 			(7). DestructionAwareBeanPostProcessor.requiresDestruction() 判断一个bean是否需要销毁。自定义销毁逻辑
 							// Meta- 				-> InitDestroyAnnotationBeanPostProcessor同时这里处理@PreDestroy注解。
 							// Meta- 				->
 							// Meta- 11. bean的销毁 -> AbstractApplicationContext.close() bean的销毁，单例池中的bean直接清除，如果在待执行销毁方法的beanMap中 则遍历调用销毁逻辑。
-							// Meta-			  -> 第七次调用 BeanPostProcessor （在bean的销毁之前。）
-							// Meta-			(7). DestructionAwareBeanPostProcessor.postProcessBeforeDestruction() 处理自定义的bean销毁逻辑。
+							// Meta-			  -> 第八次调用 BeanPostProcessor （在bean的销毁之前。）
+							// Meta-			(8). DestructionAwareBeanPostProcessor.postProcessBeforeDestruction() 处理自定义的bean销毁逻辑。
 
 							return createBean(beanName, mbd, args);
 						}
@@ -624,6 +630,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see #getBean
 	 * @see #getType
 	 */
+	// Meta- 根据名称去获取一个bean，并判断类型。
 	protected boolean isTypeMatch(String name, ResolvableType typeToMatch, boolean allowFactoryBeanInit)
 			throws NoSuchBeanDefinitionException {
 
@@ -1476,7 +1483,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
 					}
 					else {
-						// Meta- 省成一个新的RootBeanDefinition 保存到mergedBeanDefinitions中
+						// Meta- 生成一个新的RootBeanDefinition 保存到mergedBeanDefinitions中
 						mbd = new RootBeanDefinition(bd);
 					}
 				}

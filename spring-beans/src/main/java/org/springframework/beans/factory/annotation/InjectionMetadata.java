@@ -225,6 +225,8 @@ public class InjectionMetadata {
 			if (this.isField) {
 				Field field = (Field) this.member;
 				ReflectionUtils.makeAccessible(field);
+				// Meta- getResourceToInject() -> 获取需要注入的value
+				// Meta- @ResourceElement.getResourceToInject
 				field.set(target, getResourceToInject(target, requestingBeanName));
 			}
 			else {

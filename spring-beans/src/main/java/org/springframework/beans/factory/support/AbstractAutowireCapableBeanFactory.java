@@ -131,6 +131,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
 	/** Whether to automatically try to resolve circular references between beans. */
+	// Meta- 是否可以进行循环依赖  默认为true
 	private boolean allowCircularReferences = true;
 
 	/**
@@ -428,6 +429,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object result = existingBean;
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// Meta- 执行AOP
+			// Meta- 可以通过断点调试 getBeanPostProcessors()
+			// Meta- 如果没有开启 @EnableAspectJAutoProxy 注解，且自己没有实现beanPostProcessor，这里是6个
+			// Meta- 如果是开启了注解 就会多一个 AnnotationAwareAspectJAutoProxyCreator 处理AOP逻辑
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -603,13 +608,28 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
 		// Meta- 循环依赖相关。
+		// Meta- allowCircularReferences 默认允许循环依赖
+		// Meta- isSingletonCurrentlyInCreation(beanName) 判断bean是否在创建中。
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
+		// Meta- 如果满足开了循环依赖 且bean正在创建中。
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
+			// Meta- 给循环依赖相关的缓存做处理
+			// Meta- 给三级缓存 singletonFactories 添加lambda表达式逻辑
+			// Meta- 此lambda表达式逻辑 也是三级缓存的作用： 首先三级缓存是解决了循环依赖的关键。
+			// Meta- 	理由： 1. 循环依赖 是因为A需要B， B需要A，两者都拿不到对应的对象，因此无线循环。
+			// Meta- 		  2. 在这个缓存中的lambda表达式 是必须要返回一个bean对象的。 但是这个对象是半成品（没有经历完整的bean的生命周期）
+			// Meta-		  	在这里面会判断这个bean需不需要进行AOP， 如果不需要，则返回一个bean的原始对象，如果需要则返回一个bean的AOP代理对象。
+			// Meta-		  3. 因为这个半成品对象（不管是原始对象，还是代理对象）都能够临时提供给B做属性赋值，因此破开了循环依赖链。
+			// Meta- 清除二级缓存中的这个beanName
+
+			// Meta- AsyncAnnotationBeanPostProcessor这个对象会改变bean
+			// Meta- 会导致经历过循环依赖之后的 exposedObject = bean 不相等。
+			// Meta- 解决办法 可以通过加@Lazy注解方式
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -621,6 +641,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Meta- 2， 处理@Autowired @Resource @Value
 			populateBean(beanName, mbd, instanceWrapper);
 			// Meta- 5. bean的初始化。
+			// Meta- AOP
+			// Meta- exposedObject: 如果是没有循环依赖正常执行完生命周期，且进行了AOP，此处返回的是AOP的代理对象
+			// Meta- 				如果没有进行AOP，那么就是正常的普通bean
+			// Meta- 				如果进行了循环依赖、 无关是否AOP，返回的都是普通的bean，所以还需要处理。
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -633,10 +657,17 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// Meta- 如果是循环依赖的情况。
 		if (earlySingletonExposure) {
+			// Meta- 从二级缓存中获取 上一步循环依赖保存在二级缓存中的AOP代理对象，
+			// Meta- 注意传入的allowEarlyReference参数为false。
 			Object earlySingletonReference = getSingleton(beanName, false);
 			if (earlySingletonReference != null) {
+				// Meta- 这里还会出现一种情况 与@EnableAsync 开启了异步调用有关
+				// Meta- AsyncAnnotationBeanPostProcessor 会导致两者不相等。这个BeanPostProcessor会再产生一个代理对象。
+				// Meta- 解决方式 可以在通过@Lazy注解。
 				if (exposedObject == bean) {
+					// Meta- 将AOP代理对象返回
 					exposedObject = earlySingletonReference;
 				}
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
@@ -991,11 +1022,23 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param bean the raw bean instance
 	 * @return the object to expose as bean reference
 	 */
+	// Meta- 循环依赖三级缓存调用处理循环依赖。提前进行AOP
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+					// Meta- TODO 调用POST-PROCESSOR
+					// Meta- 如果开启了@EnableAspectJAutoProxy 就是开启了AOP
+					// Meta- @see AbstractAutoProxyCreator.getEarlyBeanReference
+					// Meta- 提前对bean AOP
+					// Meta- 如果开启了@EnableAsync注解 开启异步调用。
+					// Meta- 配合@Async 同样会再次产生一个代理对象。
+					// Meta- AsyncAnnotationBeanPostProcessor
+					// Meta- 这个调用是在AOP之后，所以如果开启了异步调用，产生的代理对象会将AOP代理对象再次覆盖。
+					// Meta- 这样循环依赖就会出现问题。
+					// Meta-
+					// Meta-
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
 					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
 				}
@@ -1912,6 +1955,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					(mbd != null ? mbd.getResourceDescription() : null),
 					beanName, "Invocation of init method failed", ex);
 		}
+		// Meta- 初始化后
+		// Meta- AOP处理
 		if (mbd == null || !mbd.isSynthetic()) {
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}

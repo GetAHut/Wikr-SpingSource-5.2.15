@@ -485,6 +485,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		Class<?> targetClass = clazz;
 
 		// Meta- 双层循环  do-while for
+		// Meta- 外层循环 是找到其本身 和其所有父类的
+		// Meta- 内层循环是获取注入点 并封装成 AutowiredFieldElement AutowiredMethodElement添加到集合中。
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
@@ -513,7 +515,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			// Meta- doWithLocalMethods() -> 遍历所有的方法。 逻辑与上述遍历字段类似
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				// Meta- 判断是否是桥接方法 如果是桥接方法 就跳过， 或者根据桥接方法去找到被桥接的方法
-				// Meta- 桥接方法 ->
+				// Meta- 桥接方法 -> 接口带泛型 在编译成字节码的时候 会多生成一个桥接方法 需要去找到原有的方法
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
 					return;
@@ -668,6 +670,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			// Meta- 缓存
 			if (this.cached) {
 				try {
+					// Meta- 这个缓存针对原型bean。如果多次调用getBean()  注入 会进入缓存。
+					// Meta- 第一次getBean() 的时候 去寻找注入bean的对象， 将beanName缓存起来
+					// Meta- 第二次getBean() 直接来缓存中找，
+					// Meta- 如果注入的对象的属性 也是原型的 那么只能通过beanName去getBean() 因为只能存beanName，而不能存第一次注入生成的bean
 					value = resolvedCachedArgument(beanName, this.cachedFieldValue);
 				}
 				catch (NoSuchBeanDefinitionException ex) {
@@ -715,6 +721,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							String autowiredBeanName = autowiredBeanNames.iterator().next();
 							if (beanFactory.containsBean(autowiredBeanName) &&
 									beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+								// Meta- 封装到缓存中 ShortcutDependencyDescriptor
 								cachedFieldValue = new ShortcutDependencyDescriptor(
 										desc, autowiredBeanName, field.getType());
 							}

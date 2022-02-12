@@ -166,8 +166,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(singletonFactory, "Singleton factory must not be null");
 		synchronized (this.singletonObjects) {
+			// Meta- 如果单例中有对象 直接返回
 			if (!this.singletonObjects.containsKey(beanName)) {
+				// Meta- 在单例池中没有这个对象的情况下
+				// Meta- 将对应beanName的lambda表达式对象逻辑加入三级缓存
 				this.singletonFactories.put(beanName, singletonFactory);
+				// Meta- 清除二级缓存中的beanName
 				this.earlySingletonObjects.remove(beanName);
 				this.registeredSingletons.add(beanName);
 			}
@@ -192,30 +196,76 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
-		//一级缓存 单例池
-		//循环依赖处理
+
 		// Meta- singletonObjects -> 单例池
+		// Meta- TODO 循环依赖处理
+		// Meta- 循环依赖发生-> A 依赖了 B， B 依赖了 A ，在创建A的时候需要注入B， 因为B需要去创建， 然后发现B中 需要注入A，因此而发生循环依赖
+		// Meta- 	解决问题思路：如果紧紧是依赖对象，那么只有两个缓存就应该可以解决。将A或B的原始对象（即没有经历完整的生命周期的bean对象）存储进一个map缓存中
+		// Meta-   ,然后在各自依赖的时候 注入原始对象。那么循环依赖就可以得到解决。
+		// Meta- 	但是非也， 因为bean会存在AOP代理的情况， 如果只是原始对象， 那么如果A需要被AOP，A被B依赖，A的原始对象提前提供给B注入，
+		// Meta- 	那么B完成bean的生命周期后的A属性将不是AOP代理的对象，而是普通的bean，是不满足的。
+		// Meta-	所以，需要去判断A或者B是否需要AOP？ 那么又应该是在何处去判断A或者B需要AOP呢？
+		// Meta-	其实只要在A实例化后，将判断是不是需要AOP，且必须得返回一个对象（如果需要AOP那就返回代理对象，如果不需要就原始对象）的逻辑保存起来。
+		// Meta-	然后添加到Spring定义的三级缓存中。
+		// Meta- 	在A属性注入时需要去依赖B，在创建B的过程中，发现A被标记为正在创建中，
+		// Meta-	那么就调用三级缓存中的lambda对象，获取一个半成品对象，并将这个对象放入二级缓存 用时取出注入。
+		// Meta-	以达到解决循环的目的。
+		// Meta-
+		// Meta- Spring解决循环依赖 -> 通过三级缓存处理
+		// Meta- 1. 一级缓存 singletonObjects -> 单例池: 这个本身就是用来存放已经经历过完成bean声明周期的bean。
+		// Meta- 2. 二级缓存 earlySingletonObjects -> : 这个首先存放的是一个半成品bean，它是没有经历完成的bean的生命周期。
+		// Meta- 								  -> : 其中存放的分两种情况
+		// Meta- 								  -> :  1. 如果这个bean不需要AOP， 那么存放的是bean的原始对象。
+		// Meta- 								  -> :  1. 如果这个bean需要AOP， 则存放的是bean的AOP代理对象
+		// Meta- 								  -> :  两种对象都是未完成的bean。
+		// Meta- 3. 三级缓存 singletonFactories -> 解决的循环依赖的关键。
+		// Meta- 	理由： 1. 循环依赖 是因为A需要B， B需要A，两者都拿不到对应的对象，因此无线循环。
+		// Meta- 		  2. 在这个缓存中的lambda表达式 是必须要返回一个bean对象的。 但是这个对象是半成品（没有经历完整的bean的生命周期）
+		// Meta-		  	在这里面会判断这个bean需不需要进行AOP， 如果不需要，则返回一个bean的原始对象，如果需要则返回一个bean的AOP代理对象。
+		// Meta-		  3. 因为这个半成品对象（不管是原始对象，还是代理对象）都能够临时提供给B做属性赋值，因此破开了循环依赖链。
+		// Meta- 另外一种方式：
+		// Meta- 	可以通过@Lazy注解来解决
+		// Meta-		@Lazy原理： 在@Autowired注入的时候 如果有@Lazy注解，那么会先产生一个代理对象提供给属性注入。
+		// Meta-				只有在调用属性的方法的时候，才会去创建真正的bean。
+		// Meta-		同时 @Lazy注解还可以解决 @EnableAsync 开启异步调用导致循环依赖报错的问题。
+		// Meta-
+		// Meta-
+		// Meta- 注释解释  AB循环依赖  A- 表示 A进来操作。 B-表示B进来操作
+		// Meta- A- A首次、首先创建进来获取B属性的bean
+		// Meta- B- B在A其次之后进来 获取A的bean。（此时A已经被标记为正在创建）
 		Object singletonObject = this.singletonObjects.get(beanName);
-		//证明是循环依赖
-		//以及缓存中没有， 但是在正在创建标志set中
+		// Meta- A- 因为B还没有创建，所以singletonObject肯定为空。 返回。
+		// Meta- A- 没有拿到B，所以需要去创建B，B进行属性注入时 肯定进来。
+		// Meta- B- 单例池中肯定没有A， 但是A正在创建。所以进入逻辑
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
-			//earlySingletonObjects 二级缓存
+			// Meta- B- B去二级缓存中找A，但是现在的二级缓存中是肯定没有A的。 拿到的是null
+			// Meta- 如果是循环依赖 且是需要AOP的bean，最终会从这个二级缓存中获取代理对象返回。
 			singletonObject = this.earlySingletonObjects.get(beanName);
+			// Meta- B- allowEarlyReference表示是否支持循环依赖，默认是支持的。
 			if (singletonObject == null && allowEarlyReference) {
-				//双重锁检查 防止并发 其他线程拿到未完成bean
+				// Meta- DCL双重验证， 这个锁有bug github issue
 				synchronized (this.singletonObjects) {
 					// Consistent creation of early reference within full singleton lock
+					// Meta- B- B再次去单例池中获取 -> 肯定是空
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
+						// Meta- B- 单例池中没有 再去二级缓存中尝试获取，-> 同理 同样获取不到的。
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
-							//singletonFactories 三级缓存 存放的是后置处理器
-							//二三级缓存完成AOP
+							// Meta- B- 此时一二级缓存均没有， 去拿三级缓存。
+							// Meta- 这里面肯定是有的，因为你是单例， 且Spring默认开启了循环依赖支持。
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 							if (singletonFactory != null) {
+								// Meta- 拿到的是beanName对应的lambda对象逻辑。 必定会返回一个半成品对象
+								// Meta- 可能是AOP代理的半成品对象，也有可以是普通的原始半成品对象
 								singletonObject = singletonFactory.getObject();
-								//创建完成后从二三级缓存在中移除
+								// Meta- 加锁是为了保证下面两步操作的原子性。
+								// Meta- 但是这里会有一个问题 就是可能会导致在没有属性注入为空
+								// Meta- github spring issue#26376
+								// Meta- 锁粒度变小了 可以避免死锁的问题
+								// Meta- B- 将拿到的对象放入二级缓存。
 								this.earlySingletonObjects.put(beanName, singletonObject);
+								// Meta- B- B移除三级缓存中的beanName及对应值。
 								this.singletonFactories.remove(beanName);
 							}
 						}

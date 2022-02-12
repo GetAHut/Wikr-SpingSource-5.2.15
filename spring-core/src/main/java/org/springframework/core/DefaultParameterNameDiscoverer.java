@@ -43,7 +43,9 @@ public class DefaultParameterNameDiscoverer extends PrioritizedParameterNameDisc
 		if (KotlinDetector.isKotlinReflectPresent() && !GraalDetector.inImageCode()) {
 			addDiscoverer(new KotlinReflectionParameterNameDiscoverer());
 		}
+		// Meta- 通过反射方法来获取入参属性名
 		addDiscoverer(new StandardReflectionParameterNameDiscoverer());
+		// Meta- 通过本地变量来获取属性名 （字节码）
 		addDiscoverer(new LocalVariableTableParameterNameDiscoverer());
 	}
 

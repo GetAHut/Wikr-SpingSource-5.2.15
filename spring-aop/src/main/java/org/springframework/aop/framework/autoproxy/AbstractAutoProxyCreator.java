@@ -233,10 +233,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		return null;
 	}
 
+	// Meta- 提前对bean作AOP处理
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
+		// Meta- earlyProxyReferences -> 将提前AOP的bean保存起来。 防止在生命周期的初始化之后再次AOP
 		this.earlyProxyReferences.put(cacheKey, bean);
+		// Meta- AOP逻辑
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
 
@@ -291,11 +294,14 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * identified as one to proxy by the subclass.
 	 * @see #getAdvicesAndAdvisorsForBean
 	 */
+	// Meta- bean在初始化完成之后调用。执行AOP逻辑
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			// Meta- 多一步判断 bean是否已经AOP过
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				System.out.println("AOP executing by beanName is :" + beanName);
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -345,6 +351,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 		// Create proxy if we have advice.
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		// Meta- 判断bean是否已经提前AOP过了 如果是直接将当前bean返回。
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
 			Object proxy = createProxy(

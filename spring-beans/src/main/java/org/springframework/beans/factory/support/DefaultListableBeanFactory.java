@@ -1344,6 +1344,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 
 			// Meta- 如果descriptor对应的类型是Map 数组、集合等，就直接将descriptor所对应类型的所有的bean，都返回。
+			// Meta- private OrderService[] orderService;
+			// Meta- private List<OrderService> orderService;
+			// Meta- private Map<String, OrderService> orderService;
 			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
 			if (multipleBeans != null) {
 				return multipleBeans;
@@ -1396,6 +1399,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 
 			if (autowiredBeanNames != null) {
+				// Meta- 记录已经匹配过bean的集合，方便加入缓存 缓存判断
 				autowiredBeanNames.add(autowiredBeanName);
 			}
 

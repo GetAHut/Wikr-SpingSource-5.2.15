@@ -4,11 +4,13 @@ import com.wikr.aop.User;
 import com.wikr.entities.WikrService;
 import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.context.annotation.*;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 @Configuration
 @EnableAspectJAutoProxy
 @ComponentScan("com.wikr")
+@EnableAsync
 public class AppConfig {
 
 	/**
