@@ -2,6 +2,7 @@ package com.wikr;
 
 import com.wikr.aop.User;
 import com.wikr.entities.OrderService;
+import com.wikr.entities.UserService;
 import com.wikr.entities.Wikr;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -28,12 +29,18 @@ public class SpringContextApplication {
 		AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition()
 				.getBeanDefinition();
 		beanDefinition.setBeanClass(User.class);
+		beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(new Object());
+		beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(1, new Object());
 		// 注册beanDefinition
 		context.registerBeanDefinition("user", beanDefinition);
+//
+//		// Meta- 容器销毁方法。
+//		context.close();
 
-		// Meta- 容器销毁方法。
-		context.close();
-
+		UserService userService = (UserService) context.getBean("userService");
+		OrderService orderService = (OrderService) context.getBean("orderService");
+		userService.test();
+		orderService.test();
 
 	}
 }

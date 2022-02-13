@@ -180,7 +180,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	public void destroy() {
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
-				// Meta- TODO 第七次调用POST-PROCESSOR (在bean的销毁前)
+				// Meta- TODO 第十次 调用POST-PROCESSOR (在bean的销毁前)
 				// Meta- TODO 扩展点 DestructionAwareBeanPostProcessor.postProcessBeforeDestruction() 处理自定义的bean销毁逻辑。
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}

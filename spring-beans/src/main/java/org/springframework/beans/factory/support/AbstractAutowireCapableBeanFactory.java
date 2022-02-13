@@ -414,6 +414,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object result = existingBean;
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			// Meta- 循环调用BeanPostProcessor的postProcessBeforeInitialization()
+			// Meta- TODO 第七次 调用POST-PROCESSOR （在bean的初始化之前）
+			// Meta- TODO 扩展点
+			// Meta- 处理@PostConstruct注解
 			Object current = processor.postProcessBeforeInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -429,6 +432,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		Object result = existingBean;
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// Meta- TODO 第八次 调用 POST-PROCESSOR （在bean的初始化之后，处理有关AOP逻辑）
+			// Meta- TODO 扩展点
 			// Meta- 执行AOP
 			// Meta- 可以通过断点调试 getBeanPostProcessors()
 			// Meta- 如果没有开启 @EnableAspectJAutoProxy 注解，且自己没有实现beanPostProcessor，这里是6个
@@ -516,7 +521,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			// Meta- 2. 实例化前。
-			// Meta- TODO 第一个 POST-PROCESSOR 在bean的实例化之前。
+			// Meta- TODO 第一次 调用 POST-PROCESSOR 在bean的实例化之前。
 			// Meta- TODO 扩展点 -> 在bean实例化前 使用InstantiationAwareBeanPostProcessor处理beanClass
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
@@ -593,7 +598,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
-					// Meta- TODO 第二个 POST-PROCESSOR，bean实例化时。
+					// Meta- TODO 第三次 POST-PROCESSOR，bean实例化时。
 					// Meta- TODO 扩展点：是实例化bean的时候 调用MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition() 处理BeanDefinition
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
@@ -1028,7 +1033,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
-					// Meta- TODO 调用POST-PROCESSOR
+					// Meta- TODO 第六次 调用POST-PROCESSOR （循环依赖时，三级缓存处理）
 					// Meta- 如果开启了@EnableAspectJAutoProxy 就是开启了AOP
 					// Meta- @see AbstractAutoProxyCreator.getEarlyBeanReference
 					// Meta- 提前对bean AOP
@@ -1257,6 +1262,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #autowireConstructor
 	 * @see #instantiateBean
 	 */
+	// Meta- args: 表示在getBean("userService", new OrderService)
+	// Meta- 即getBean传入的参数值， 也就是构造方法的参数
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
@@ -1271,6 +1278,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
+		// Meta- 处理@Bean逻辑
+		// Meta- 与@Autowired类似
+		// Meta- @Bean 创建的bean 其实 是factoryMethod， 因为AppConfig本身就是一个bean。 在bean中调用工厂方法去创建另外一个bean
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1278,37 +1288,71 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Shortcut when re-creating the same bean...
 		boolean resolved = false;
 		boolean autowireNecessary = false;
+		// Meta- 只有是在getBean的时候没有传入参数才会去缓存。 如果传了直接取args就行推断构造方法
+		// Meta- 此处缓存解析 只在是原型bean的情况下， 单例bean 一次创建就结束了 不需要去缓存.
 		if (args == null) {
 			synchronized (mbd.constructorArgumentLock) {
 				if (mbd.resolvedConstructorOrFactoryMethod != null) {
 					resolved = true;
+					// Meta- constructorArgumentsResolved: 缓存标识
+					// Meta- 如果beanDefinition使用的是无参构造函数， 这里则为false。 只有有参构造函数才为true
 					autowireNecessary = mbd.constructorArgumentsResolved;
 				}
 			}
 		}
+		// Meta- 如果在上一步缓存了结果
+		// Meta- 这里则去取出缓存的构造方法以及方法参数
 		if (resolved) {
 			if (autowireNecessary) {
+				// Meta-  autowireConstructor() -> 方法内去拿到缓存好的构造方法的入参
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
+				// Meta- 推断出构造方法，因为无参 所以直接使用无参构造器构造对象。
 				return instantiateBean(beanName, mbd);
 			}
 		}
 
 		// Candidate constructors for autowiring?
+		// Meta- 去查找确定构造方法（可能会推断出多个）
+		// Meta- 调用BeanPostProcessor处理
+		// Meta- 推断方法处理情况：
+		// Meta- 通过调用BeanPostProcessor来处理
+		// Meta- @see AutowiredAnnotationBeanPostProcessor#determineCandidateConstructors
+		// Meta- 	1. 有@Autowired注解的构造方法：
+		// Meta-		1.1: 只有一个required = true的构造方法，直接返回此构造方法
+		// Meta-		1.2: 如果有多个required = true的构造方法 ，直接抛出异常
+		// Meta-		1.3: 如果有一个required = true 其他构造方法为 required = false， 直接抛出异常
+		// Meta-		1.4: 如果没有required = true，且都为required = false 和 加了注解的无参构造方法 一起返回。
+		// Meta-	2. 没有@Autowired注解的构造方法
+		// Meta-		2.1: 有多个构造方法 抛出异常
+		// Meta-		2.2: 只有一个有参的构造方法，返回此构造方法
+		// Meta-		2.3: 只有一个无参的构造方法，返回null
+		// Meta- 针对2.3这种情况 因为最终会判断 你是否提供了一个构造方法， 如果没有提供可选的构造方法 就会使用无参构造方法来创建实例
+		// Meta- 所以在2.3这一步 不需要多此一举返回无参构造方法。
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+
+		// Meta- 1. 如果上一步推断出来的构造方法不为空， 则需要进行构造方法注入了
+		// Meta- 2. 如果解析的beanDefinition的注入模型为AUTOWIRE_CONSTRUCTOR（构造方法注入）
+		// Meta- 3. 如果在beanDefinition中给构造方法设置值 则肯定要进行构造方法注入 -> beanDefinition.setConstructorArgumentValues();
+		// Meta- 4. 如果在getBean传入的构造器参数不为空 则肯定需要进行构造方法注入。
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+			// Meta- 如果确定好用哪一个构造方法 及参数，就用这个构造方法实例化一个对象返回。
+			// Meta- 根据determineConstructorsFromBeanPostProcessors()返回的构造方法 去选择一个实例化对象。
+			// Meta- args -> getBean传入的参数
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
 		// Preferred constructors for default construction?
 		ctors = mbd.getPreferredConstructors();
 		if (ctors != null) {
+			// Meta- 通过候选出来的构造方法实例化对象。
 			return autowireConstructor(beanName, mbd, ctors, null);
 		}
 
 		// No special handling: simply use no-arg constructor.
+		// Meta- 如果没有候选的构造方法 则直接使用无参构造方法实例化对象。
 		return instantiateBean(beanName, mbd);
 	}
 
@@ -1379,6 +1423,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		if (beanClass != null && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
+				// Meta- TODO 第二次 调用POST-PROCESSOR （实例化之前， 推断构造方法逻辑时）
+				// Meta- TODO 扩展点 SmartInstantiationAwareBeanPostProcessor.determineCandidateConstructors()
+				// Meta- 推断候选的构造方法逻辑 -> 找到类中有哪些构造方法可用
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
 					Constructor<?>[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
@@ -1478,7 +1525,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
-		// Meta- TODO 第三个 POST-PROCESSOR 在实例化之后，属性赋值之前。
+		// Meta- TODO 第四次 POST-PROCESSOR 在实例化之后，属性赋值之前。
 		// Meta- 此次调用的POST-PROCESSOR 与第一次调用的一致。
 		// Meta- TODO 扩展点 调用 InstantiationAwareBeanPostProcessor.postProcessAfterInstantiation()
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
@@ -1532,7 +1579,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				// Meta- 通过循环所有的BeanPostProcessor ，调用实现了InstantiationAwareBeanPostProcessor.postProcessProperties()
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
-					// Meta- TODO 第四个 POST-PROCESSOR 在属性赋值中的Spring自带的依赖注入处理结束之后。
+					// Meta- TODO 第五次 POST-PROCESSOR 在属性赋值中的Spring自带的依赖注入处理结束之后。
 					// Meta- 此次调用的POST-PROCESSOR 与第一次、第三次调用的一致，方法不同。
 					// Meta- TODO 扩展点 调用实现了InstantiationAwareBeanPostProcessor.postProcessProperties()
 					// Meta- 此处用来处理AutowiredAnnotationBeanPostProcessor、用CommonAnnotationBeanPostProcessor逻辑的

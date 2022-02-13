@@ -261,6 +261,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	@Nullable
+	// Meta- 认为哪一个构造方法上面加了@Autowired注解的 表示该构造方法可用
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
 
@@ -299,14 +300,17 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		}
 
 		// Quick check on the concurrent map first, with minimal locking.
+		// Meta- 从缓存中取该class的构造方法
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 		if (candidateConstructors == null) {
 			// Fully synchronized resolution now...
 			synchronized (this.candidateConstructorsCache) {
+				// Meta- 还是缓存
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						// Meta- 获取这个类中所有的构造方法。
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -314,9 +318,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								"Resolution of declared constructors on bean Class [" + beanClass.getName() +
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
+					// Meta- 候选构造方法集合
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
+					// Meta- 存放@Autowired注解中required = true的构造方法， 一个类中只能有一个required = true的构造方法
 					Constructor<?> requiredConstructor = null;
+					// Meta- 用来存放默认的构造方法 -> 无参构造方法
 					Constructor<?> defaultConstructor = null;
+					// Meta- 与Kotlin相关
 					Constructor<?> primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
 					int nonSyntheticConstructors = 0;
 					for (Constructor<?> candidate : rawCandidates) {
@@ -326,13 +334,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// Meta- 通过遍历所有的构造方法，判断构造方法上是否有@Autowired的注解
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
 						if (ann == null) {
+							// Meta- 如果没有找到@Autowired注解的方法， 则判断当前类是否是cglib的代理类
+							// Meta- 判断表示 "$$"
+							// Meta- 如果是cglib代理的类，因为cglib是继承关系 其父类就是原始类。因此获取原始类再次判断。
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
 							if (userClass != beanClass) {
 								try {
 									Constructor<?> superCtor =
 											userClass.getDeclaredConstructor(candidate.getParameterTypes());
+									// Meta- 其父类上所有添加@Autowired 的方法
 									ann = findAutowiredAnnotation(superCtor);
 								}
 								catch (NoSuchMethodException ex) {
@@ -340,33 +353,48 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								}
 							}
 						}
+						// Meta- 将@Autowired注解的构造方法筛选出来之后
 						if (ann != null) {
+							// Meta- 如果已经有了一个required = true 的构造方法了 就不能有其他加了@Autowired的注解了不管另外的注解中required是否为true
 							if (requiredConstructor != null) {
 								throw new BeanCreationException(beanName,
 										"Invalid autowire-marked constructor: " + candidate +
 										". Found constructor with 'required' Autowired annotation already: " +
 										requiredConstructor);
 							}
+							// Meta- 判断注解上required 是否等于true。
 							boolean required = determineRequiredStatus(ann);
 							if (required) {
+								// Meta- 如果有多个required = true的情况下会报错
 								if (!candidates.isEmpty()) {
 									throw new BeanCreationException(beanName,
 											"Invalid autowire-marked constructors: " + candidates +
 											". Found constructor with 'required' Autowired annotation: " +
 											candidate);
 								}
+								// Meta- 记录required = true的构造方法
 								requiredConstructor = candidate;
 							}
+							// Meta- 将候选构造方法加入候选集合中。不管required是否是true 都添加进去
+							// Meta- 如果无参构造方法上添加了 @Autowired 也会加入到集合中。
 							candidates.add(candidate);
 						}
 						else if (candidate.getParameterCount() == 0) {
+							// Meta- 如果没有@Autowired注解的构造方法 则找到默认的无参构造方法。
 							defaultConstructor = candidate;
 						}
 					}
+
+					// Meta- candidates集合中有三种情况
+					// Meta- 1. candidates为空，表示没有@Autowired注解的构造方法
+					// Meta- 2. candidates不为空，第一种情况表示有多个多个required = false的构造方法
+					// Meta- 3. candidates不为空， 第二种情况表示有一个required = true的构造方法
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
+						// Meta- 如果没有required = true的构造方法 且有默认的无参构造方法 可能有所有的required = false的构造方法
 						if (requiredConstructor == null) {
 							if (defaultConstructor != null) {
+								// Meta- 则将默认的无参构造方法添加到候选者集合中。
 								candidates.add(defaultConstructor);
 							}
 							else if (candidates.size() == 1 && logger.isInfoEnabled()) {
@@ -376,11 +404,16 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 										"default constructor to fall back to: " + candidates.get(0));
 							}
 						}
+						// Meta- 将集合转换为数组
 						candidateConstructors = candidates.toArray(new Constructor<?>[0]);
 					}
+					// Meta- 在候选者集合为空的情况下 即表示没有@Autowired注解的构造方法
+					// Meta- 如果这个beanClass中只有一个构造方法，且是有参的构造方法
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
+
+
 					else if (nonSyntheticConstructors == 2 && primaryConstructor != null &&
 							defaultConstructor != null && !primaryConstructor.equals(defaultConstructor)) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor, defaultConstructor};
@@ -388,13 +421,17 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					else if (nonSyntheticConstructors == 1 && primaryConstructor != null) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor};
 					}
+
 					else {
+						// Meta- 如果rawCandidates有多个构造方法，则new一个空的数组
 						candidateConstructors = new Constructor<?>[0];
 					}
+					// Meta- 添加到缓存中
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);
 				}
 			}
 		}
+		// Meta- 如果 candidateConstructors 没有值的情况下 返回空
 		return (candidateConstructors.length > 0 ? candidateConstructors : null);
 	}
 

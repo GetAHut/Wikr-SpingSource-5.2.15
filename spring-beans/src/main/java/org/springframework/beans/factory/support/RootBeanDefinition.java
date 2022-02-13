@@ -98,9 +98,11 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	Executable resolvedConstructorOrFactoryMethod;
 
 	/** Package-visible field that marks the constructor arguments as resolved. */
+	// Meta- 缓存构造方法 以及参数的标识
 	boolean constructorArgumentsResolved = false;
 
 	/** Package-visible field for caching fully resolved constructor arguments. */
+	// Meta- 缓存构造方法以及参数的数组、
 	@Nullable
 	Object[] resolvedConstructorArguments;
 
