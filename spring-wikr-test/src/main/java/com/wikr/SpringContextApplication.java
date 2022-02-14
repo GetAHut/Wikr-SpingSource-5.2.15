@@ -1,6 +1,7 @@
 package com.wikr;
 
 import com.wikr.aop.User;
+import com.wikr.beanFactoryPostProcessor.WikrBeanFactoryPostProcessor;
 import com.wikr.entities.OrderService;
 import com.wikr.entities.UserService;
 import com.wikr.entities.Wikr;
@@ -21,8 +22,9 @@ public class SpringContextApplication {
 //		Wikr wikr = (Wikr) context.getBean("wikr");
 //		OrderService bean = context.getBean(OrderService.class);
 //		System.out.println(wikr);
-
-
+//		context.register(AppConfig.class);
+		// Meta- 手动给context设置自定义的beanFactoryPostProcessor
+//		context.addBeanFactoryPostProcessor(new WikrBeanFactoryPostProcessor());
 		User bean = context.getBean(User.class);
 		bean.test();
 		// 获取beanDefinition

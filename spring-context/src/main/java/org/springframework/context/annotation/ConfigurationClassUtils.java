@@ -85,11 +85,16 @@ abstract class ConfigurationClassUtils {
 	public static boolean checkConfigurationClassCandidate(
 			BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
 
+		// Meta- 如果是@Bean定义的配置类。是不起作用的
+		// Meta- AppConfig1类中有一个@Bean方法， 按理它会成为一个配置类。
+		// Meta- 但是如果这个配置类是在AppConfig中@Bean方法定义的 则不起作用
+		// Meta- 因为这里拿到AppConfig1的className为空
 		String className = beanDef.getBeanClassName();
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
+		// Meta- 类元数据
 		AnnotationMetadata metadata;
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
@@ -122,10 +127,17 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// Meta- 判断是否有@Configuration注解
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
+		// Meta- 继续判断@Configuration中的 proxyBeanMethods == true？
+		// Meta- proxyBeanMethods == true (默认为true) 则表示配置类是一个full配置类
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// Meta- 1. 如果@Configuration(proxyBeanMethods = false)表示为一个lite配置类
+		// Meta- 2. 如果有@Component @ComponentScan @Import @ImportResource 任一个注解都是配置类
+		// Meta- 3. 如果配置类上没有以上注解， 但是有@Bean的方法 也是一个配置类
+		// Meta- 以上三种情况都是lite配置类
 		else if (config != null || isConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
@@ -151,11 +163,13 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
 		// Do not consider an interface or an annotation...
+		// Meta- 接口不能作为配置类
 		if (metadata.isInterface()) {
 			return false;
 		}
 
 		// Any of the typical annotations found?
+		// Meta- 如果有@Component @ComponentScan @Import @ImportResource 任一个注解都是配置类
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
@@ -163,6 +177,7 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// Finally, let's look for @Bean methods...
+		// Meta- 如果配置类上没有以上注解， 但是有@Bean的方法 也是一个配置类
 		return hasBeanMethods(metadata);
 	}
 

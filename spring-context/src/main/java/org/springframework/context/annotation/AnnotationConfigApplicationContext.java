@@ -106,10 +106,10 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// Meta- 初始化了读取器
 		// Meta- 初始化了扫描器
 		this();
-		//注册 配置类
+		// Meta- 注册配置类，放到beanDefinitionMap中
 		register(componentClasses);
-		//spring 最重要的方法 其中有13个方法！
 		//IOC 容器加载过程接口 （刷新）
+		// Meta- 模板方法模式
 		refresh();
 	}
 

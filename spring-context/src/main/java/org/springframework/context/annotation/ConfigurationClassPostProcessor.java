@@ -234,6 +234,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 		this.registriesPostProcessed.add(registryId);
 
+		// Meta- 解析配置类
 		processConfigBeanDefinitions(registry);
 	}
 
@@ -267,11 +268,17 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * {@link Configuration} classes.
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+		// Meta- 配置类集合
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		//获取IOC容器中所有beanDefinition名称
+		// Meta- 获取beanFactory中的beanDefinition
+		// Meta- 此时拿到的beanDefinition是在new Reader的时候注册的beanDefinition 以及配置类。
+		// Meta- 配置类为new容器时传入的AppConfig.class
+		// Meta- 容器中自己注入的@see AnnotationConfigUtils#registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		//循环beanDefinition信息
+		// Meta- 遍历
 		for (String beanName : candidateNames) {
 			//通过beanName获取bean对象
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
@@ -283,20 +290,23 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			//进行正在解析的配置类是不是完全的配置类（full）， 还是一个非完全的配置类（lite）
 			//即是判断配置类是否有@Configuration注解
 			//筛选配置类
+			// Meta- 判断是否是配置类
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				//满足则添加至配置类集合中
+				// Meta- 将所有满足筛选条件的配置类添加到配置类集合中
 				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}
 		}
 
 		// Return immediately if no @Configuration classes were found
 		// 无候选解析列表直接返回
+		// Meta- 没有配置类直接返回
 		if (configCandidates.isEmpty()) {
 			return;
 		}
 
 		// Sort by previously determined @Order value, if applicable
-		//对配置类进行order排序
+		// Meta- 对配置类通过Order排序
 		configCandidates.sort((bd1, bd2) -> {
 			int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
 			int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
@@ -308,6 +318,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		if (registry instanceof SingletonBeanRegistry) {
 			sbr = (SingletonBeanRegistry) registry;
 			if (!this.localBeanNameGeneratorSet) {
+				// Meta- 获取BeanNameGenerator 在初始化容器时添加入BeanDefinition
 				BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(
 						AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR);
 				if (generator != null) {
@@ -322,18 +333,47 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Parse each @Configuration class
-		//ConfigurationClassParser配置类解析对象-----> 解析我们的配置类
+		// Meta- 创建配置类解析器
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
 
+		// Meta- 待解析配置类
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
+		// Meta- 保存已经解析过的配置类
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
+		// Meta- do-while 循环解析
 		do {
 			//解析配置类 在上面筛选，候选配置类只有我们设置的
+			// Meta- 解析配置类 (多种情况)
+			// Meta-
+ 			// Meta- 1. 配置类上是否有@Component， 有则去检查是否有内部类，
+			//  		有内部类就去判断是否符合配置类的条件， 有就递归解析
+			// Meta- 2. 配置类上是否有@ComponentScan -> 存在则去扫描，注册beanDefinition，
+			//  		最后判断beanDefinition中是否有满足配置类，递归解析
+			// Meta- 3. 检查配置类上是否有@Import注解：有注解去获取@Import导入的类，
+			//  		通过ConfigurationClassParser#processImports去处理导入的类。
+			//  			3.1.1: 判断导入类是否是ImportSelector类型。
+			//  				-> 是调用ImportSelector#selectImports 获取方法返回的所有类名。
+			//  					再次将这些类当做@Import导入的类，递归调用ConfigurationClassParser#processImports解析
+			//  			3.1.2: 判断是否是DeferredImportSelector类型。 （表示推迟解析）
+			// 					-> 是在当前这一批配置类解析结束之后，再去解析此类型的selectImports方法
+			//  			3.2: 判断是否是ImportBeanDefinitionRegistrar.class类型。
+			//  				-> 是则将实现ImportBeanDefinitionRegistrar接口的对象实例化，
+			//  					添加到配置类的 importBeanDefinitionRegistrars 属性中
+			//  			3.3: 如果导入的类不是以上类型，则将导入的类当做新的配置类递归解析。
+			// Meta- 4. 检查配置类上是否有@ImportResource("Spring.xml")，
+			//  		有则将解析出来的配置文件路径设置到配置类的 importResources 属性中
+			// Meta- 5. 检查配置类中是否有@Bean注解的方法。有则将所有@Bean注解的方法封装成BeanMethod对象，
+			//  		添加到配置类的beanMethods属性中
+			// Meta- 6. 检查配置类实现的接口中是否有默认的实现方法，且在方法上添加了@Bean注解。有则将所有@Bean注解的方法封装成BeanMethod对象，
+			//	 		添加到配置类的 beanMethods 属性中
+			// 				-> 参考实现 AppInterface.class
+			// Meta- 7. 把配置类的父类当做配置类递归解析。
 			parser.parse(candidates);
 			parser.validate();
 
+			// Meta- parser.parse(candidates)解析出来的配置类结果
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
 			configClasses.removeAll(alreadyParsed);
 
@@ -343,11 +383,19 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			// Meta- 这个方法就是注册了很多新的BeanDefinition
+			// Meta- 将导入的类解析并注册成BeanDefinition
+			// Meta- 将配置类解析出来三个属性 再次解析注册为BeanDefinition
+			// Meta- 1. importBeanDefinitionRegistrars
+			// Meta- 2. importResources
+			// Meta- 3. beanMethods
 			this.reader.loadBeanDefinitions(configClasses);
 			//已经解析过的
 			alreadyParsed.addAll(configClasses);
 
 			candidates.clear();
+			// Meta- 通过注册的BeanDefinition数量判断是否又生成了新的 BeanDefinition。
+			// Meta- 如果有生成新的BeanDefinition，则拿到这些新的再去递归解析，判断是否有配置类...
 			if (registry.getBeanDefinitionCount() > candidateNames.length) {
 				String[] newCandidateNames = registry.getBeanDefinitionNames();
 				Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
@@ -356,10 +404,13 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
 				}
 				for (String candidateName : newCandidateNames) {
+					// Meta- 取出新注册的BeanDefinition
 					if (!oldCandidateNames.contains(candidateName)) {
 						BeanDefinition bd = registry.getBeanDefinition(candidateName);
+						// Meta- 判断新的BeanDefinition中是否有配置类 如果有再次解析
 						if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &&
 								!alreadyParsedClasses.contains(bd.getBeanClassName())) {
+							// Meta- 添加到候选解析集合 循环解析
 							candidates.add(new BeanDefinitionHolder(bd, candidateName));
 						}
 					}

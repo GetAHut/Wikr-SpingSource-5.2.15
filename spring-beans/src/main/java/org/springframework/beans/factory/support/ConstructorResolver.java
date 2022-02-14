@@ -162,7 +162,7 @@ class ConstructorResolver {
 			}
 		}
 
-		// Meta- 如果没有确定构造方法 ，或者是确定了构造方法 但是灭有确定参数
+		// Meta- 如果没有确定构造方法 ，或者是确定了构造方法 但是没有确定参数
 		if (constructorToUse == null || argsToUse == null) {
 			// Take specified constructors, if any.
 			// Meta- 判断是否传入的候选的构造方法
@@ -341,7 +341,7 @@ class ConstructorResolver {
 			}
 			// Meta- ambiguousConstructors中有多个构造方法， 即分数相同的。
 			// Meta- 满足lenientConstructorResolution = false抛出异常，默认为true
-			// Meta- 不满足则直接使用分数相等的且先遍历到的方法。（排序靠前的）
+			// Meta- 不满足 则直接使用分数相等的且先遍历到的方法。（排序靠前的）
 			else if (ambiguousConstructors != null && !mbd.isLenientConstructorResolution()) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 						"Ambiguous constructor matches found in bean '" + beanName + "' " +
@@ -838,7 +838,10 @@ class ConstructorResolver {
 						args.preparedArguments[paramIndex] = sourceValue;
 					}
 				}
+				// Meta- 转换后的属性类型
 				args.arguments[paramIndex] = convertedValue;
+				// Meta- 获取到的原始属性类型
+				// Meta- 在判断分值时用到。
 				args.rawArguments[paramIndex] = originalValue;
 			}
 			else {

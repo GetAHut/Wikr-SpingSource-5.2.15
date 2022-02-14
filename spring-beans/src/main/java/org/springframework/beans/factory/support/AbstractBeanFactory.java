@@ -384,11 +384,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Meta- 			如果在第一次调用返回了bean实例，则Spring认为已经完成了bean的实例化，则调用（2）的后置处理器。
 							// Meat-			(1.1). BeanPostProcessor.postProcessAfterInitialization()
 							// Meta- 				-> 直接跳到初始化后这一步 与AOP有关。 所有的bean都必须走到AOP逻辑，
+							// Meta- 3. 实例化bean -> doCreateBean() -> 实例化bean，在createBeanInstance()中推断实例化的构造方法。
 							// Meta- 			-> 第二次调用BeanPostProcessor（推断构造方法时）
 							// Meta-			(2). SmartInstantiationAwareBeanPostProcessor.determineCandidateConstructors()
-							// Meta-				-> AutowiredAnnotationBeanPostProcessor.determineCandidateConstructors() 处理@Autowired注解的构造方法
-							// Meta-
-							// Meta- 3. 实例化bean -> doCreateBean() -> 实例化bean，在createBeanInstance()中推断实例化的构造方法。
+							// Meta-				-> AutowiredAnnotationBeanPostProcessor.determineCandidateConstructors()
+							// Meta-				-> 处理@Autowired注解的构造方法
 							// Meta- 			-> 第三次调用BeanPostProcessor （实例化时）
 							// Meta- 			(3). MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()
 							// Meta- 				-> 通过此扩展点可以对合并之后的BeanDefinition进行自定义设置部分属性值。（有些在加载类设置过的值不能修改。）
@@ -417,8 +417,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Meta- 8. bean的初始化 -> invokeInitMethods()
 							// Meta-					-> 在bean初始化的时候 会去判断是bean是否是InitializingBean类型，（扩展点）
 							// Meta-						-> 是则会去循环调用InitializingBean.afterPropertiesSet()。 可以自定义扩展在初始化时的操作。
-							// Meta- 					-> 在调用完上述方法之后， 回去处理InitMethods,也就是初始化方法（如果自己有指定init() 会在此处调用。）
-							// Meta-						-> 在第二次调用的BeanPostProcessor的时候 获取到的beanDefinition中就可以设置initMethods。
+							// Meta- 					-> 在调用完上述方法之后， 会去处理InitMethods,也就是初始化方法（如果自己有指定init() 会在此处调用。）
+							// Meta-						-> 在第三次调用的BeanPostProcessor的时候 获取到的beanDefinition中就可以设置initMethods。
 							// Meta- 9.	bean的初始化后 -> 存入单例池，（循环依赖问题。） AOP
 							// Meta- 			  -> 第八次调用BeanPostProcessor （bean初始化后）
 							// Meta- 			(8). BeanPostProcessor.postProcessAfterInitialization()  --> AOP逻辑处理、Async异步调用逻辑处理
@@ -1685,6 +1685,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Meta- 获取当前的className，用以类加载器加载类。
+		// Meta- 在scan方法中设置过beanClass的属性
 		String className = mbd.getBeanClassName();
 		if (className != null) {
 			// Meta- 调用Spring表达式解析。 可能直接返回一个对象。

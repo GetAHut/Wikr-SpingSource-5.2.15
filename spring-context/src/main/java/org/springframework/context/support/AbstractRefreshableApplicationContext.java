@@ -119,15 +119,21 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+		// Meta - 判断是会否已经存在beanFactory
 		if (hasBeanFactory()) {
+			// Meta- 销毁bean
 			destroyBeans();
+			// Meta- 关闭beanFactory
 			closeBeanFactory();
 		}
 		try {
+			// Meta- 重启beanFactory
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
 			customizeBeanFactory(beanFactory);
+			// Meta- 重新加载beanDefinition
 			loadBeanDefinitions(beanFactory);
+			// Meta- 返回这个新的beanFactory
 			this.beanFactory = beanFactory;
 		}
 		catch (IOException ex) {

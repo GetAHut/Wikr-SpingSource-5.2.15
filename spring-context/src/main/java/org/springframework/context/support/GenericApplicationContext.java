@@ -109,6 +109,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 * @see #refresh
 	 */
 	public GenericApplicationContext() {
+		// Meta- 初始化beanFactory！
 		this.beanFactory = new DefaultListableBeanFactory();
 	}
 
@@ -262,6 +263,8 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws IllegalStateException {
+		// Meta- AnnotationConfigApplicationContext -> 不支持重复刷新 （多次调用refresh()）
+		// Meta- AnnotationConfigWebApplicationContext -> 支持重复刷新 （多次调用refresh()）
 		if (!this.refreshed.compareAndSet(false, true)) {
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");

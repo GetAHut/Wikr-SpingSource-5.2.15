@@ -599,7 +599,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.postProcessed) {
 				try {
 					// Meta- TODO 第三次 POST-PROCESSOR，bean实例化时。
-					// Meta- TODO 扩展点：是实例化bean的时候 调用MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition() 处理BeanDefinition
+					// Meta- TODO 扩展点：是实例化bean的时候 调用MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition()
+					// Meta- 处理BeanDefinition
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -1266,6 +1267,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	// Meta- 即getBean传入的参数值， 也就是构造方法的参数
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
+		// Meta- 确保已经加载过beanClass
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
@@ -1273,15 +1275,22 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
 
+		// Meta- 配合@Supplier注解使用
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
+			// Meta- 通过@Supplier返回一个bean。
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
 		// Meta- 处理@Bean逻辑
 		// Meta- 与@Autowired类似
 		// Meta- @Bean 创建的bean 其实 是factoryMethod， 因为AppConfig本身就是一个bean。 在bean中调用工厂方法去创建另外一个bean
+		// Meta- @Bean 中可以存在两种方式 一种静态、一种非静态。
+		// Meta- 其思想原理都是在AppConfig.class中设置factoryMethod 或者factoryMethodName
+		// Meta- 如果出现同名，参数不同的方法 会将isFactoryMethodUnique 设置成false。其后逻辑与推断构造方法就类似了。
+		// Meta- 因为isFactoryMethodUnique = false 就相当于找到了多个方法（类比于多个构造方法这样） spring需要去判断是使用哪一个
 		if (mbd.getFactoryMethodName() != null) {
+			// Meta- 在@Bean模式下确定生成bean的方法 生成bean后返回。
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
@@ -1453,6 +1462,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						getAccessControlContext());
 			}
 			else {
+				// Meta- 策略模式实现 默认CglibSubclassingInstantiationStrategy()
 				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);
 			}
 			BeanWrapper bw = new BeanWrapperImpl(beanInstance);

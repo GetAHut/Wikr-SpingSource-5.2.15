@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @EnableAspectJAutoProxy
 @ComponentScan("com.wikr")
 @EnableAsync
-public class AppConfig {
+public class AppConfig implements AppInterface {
 
 	/**
 	 * Spring自带的属性注入方式， （已经过时。）

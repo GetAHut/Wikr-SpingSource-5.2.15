@@ -1357,6 +1357,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// Meta- 在Spring认为如果有多个bean的时候 因为属性注入只需要注入一个 ，所以不需要将所有的bean都实例化成一个bean、
 			// Meta- 而在扫描成beanDefinition的时候 已经注册记录了beanClass，直接通过beanClass就可以判断。
 			// Meta- 所以这里可能是一个bean 也有可能是一个beanClass。
+			// Meta-
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (matchingBeans.isEmpty()) {
 				// Meta- 如果返回的map是空的 且required = true， 则抛出异常，

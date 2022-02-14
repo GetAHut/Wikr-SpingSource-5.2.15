@@ -70,6 +70,8 @@ public interface BeanFactoryPostProcessor {
 	 * @param beanFactory the bean factory used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
+	// Meta- beanFactory后置处理器， 通过这个方法拿到beanFactory， 对beanDefinition进行修改...
+	// Meta- 这个方法不可以进行注册beanDefinition
 	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
 
 }

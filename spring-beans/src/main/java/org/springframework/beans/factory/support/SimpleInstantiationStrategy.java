@@ -60,6 +60,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		// Meta- 判断是否有@Lookup注解的方法
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
@@ -88,6 +89,9 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// Meta- @see CglibSubclassingInstantiationStrategy.instantiateWithMethodInjection(org.springframework.beans.factory.support.RootBeanDefinition, java.lang.String, org.springframework.beans.factory.BeanFactory)
+			// Meta- 如果有作cglib代理处理 不在通过构造器方法实例化对象
+			// Meta- 返回一个代理对象。 @lookup一般用于原型。
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

@@ -137,14 +137,24 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// Meta- 被导入的类： @Component的内部类、@Import的类都是被导入的类。
 		if (configClass.isImported()) {
+			// Meta- 将导入的类直接注册成BeanDefinition并解析
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+
+		// Meta- 解析存储在配置类中的beanMethods的属性
+		// Meta- 即是解析@Bean注解的方法。
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
+		// Meta- 解析存储在配置类中importedResources属性
+		// Meta- 解析@ImportResource("Spring.xml")
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+
+		// Meta- 解析存储配置类中的importBeanDefinitionRegistrars属性
+		// Meta- wirk-@Import中的类 实现的ImportBeanDefinitionRegistrar接口
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 

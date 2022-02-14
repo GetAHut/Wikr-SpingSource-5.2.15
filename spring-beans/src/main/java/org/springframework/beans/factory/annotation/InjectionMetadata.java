@@ -116,6 +116,7 @@ public class InjectionMetadata {
 				(checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
 			for (InjectedElement element : elementsToIterate) {
+				// Meta- 不同实现调用不同的inject处理逻辑
 				element.inject(target, beanName, pvs);
 			}
 		}
