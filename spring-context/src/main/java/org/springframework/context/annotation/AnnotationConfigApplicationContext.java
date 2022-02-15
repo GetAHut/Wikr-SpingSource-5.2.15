@@ -68,6 +68,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// Meta- BeanDefinitionRegistry
 		// Meta- 可以把某个类转化为BeanDefinition， 并且会解析类上的注解
 		// Meta- 他能解析的注解有： @Conditional，@Scope、@Lazy、@Primary、@DependsOn、@Role、@Description
+		// Meta- 初始化了@Lazy、@Autowired、 @Resource的解析器
+		// Meta- 注册与事件相关的bean EventListenerMethodProcessor
+		// Meta- 注册 DefaultEventListenerFactory 将EventListenerMethodProcessor解析出来的Map<Method, Listener>封装成监听器对象。
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		// Meta- 创建BeanDefinition扫描器
 		// Meta- 初始化  classpath类型的beanDefinition 扫描器
@@ -76,7 +79,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// Meta- 此处的scan对象 是提供给我们在外部调用扫描包或者类 context.scan();
 		// Meta- 扫描器 通过给定的包路劲，扫描类，判断如果类上存在@Component注解的，则将其解析为一个BeanDefinition；
 		// Meta- 判断类上注解， 是通过MetadataReader、ClassMetadata、AnnotationMetadata来获取类上的元数据，
-		// Meta- （比如说类名，注解信息<注解嵌套注解也可以判断出来>，接口信息，方法信息等等 ）以此来判断是否满足注解要求。
+		// Meta- 比如说类名，注解信息<注解嵌套注解也可以判断出来>，接口信息，方法信息等等 以此来判断是否满足注解要求。
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 

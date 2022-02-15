@@ -441,6 +441,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
 						// Meta- BeanDefinition筛选
 						// Meta- includeFilters和excludeFilters判断
+						// Meta- 在初始化时给includeFilters添加了@Component 和@Condition
 						if (isCandidateComponent(metadataReader)) {
 							// Mate- 在符合的情况下 构建一个beanDefinition
 							// Meat- 如果是通过扫描出来的类 则构建ScannedGenericBeanDefinition

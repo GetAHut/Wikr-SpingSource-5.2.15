@@ -99,12 +99,12 @@ final class PostProcessorRegistrationDelegate {
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			//拿到实现了BeanDefinitionRegistryPostProcessor的beanDefinition 也就是ConfigurationClassPostProcessor
 			//后续继续安排实现了哪种优先级接口， 按先后顺序排序
+			// Meta- 第一步
 			// Meta- 去beanDefinitionMap中去拿实现了BeanDefinitionRegistryPostProcessor的beanDefinition
-			// Meta- 1@see AnnotationConfigUtils.registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
+			// Meta- wikr-@see AnnotationConfigUtils.registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
 			// Meta- 在初始化context时 new的Reader中注册
 			// Meta- 可能会获取到多个
 			// Meta- 默认找到的是 ConfigurationClassPostProcessor
-			// Meta- 第一步
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {

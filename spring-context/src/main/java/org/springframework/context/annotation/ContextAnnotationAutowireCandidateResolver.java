@@ -83,6 +83,7 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 				"BeanFactory needs to be a DefaultListableBeanFactory");
 		final DefaultListableBeanFactory dlbf = (DefaultListableBeanFactory) beanFactory;
 
+		// Meta- 表示被代理对象的来源
 		TargetSource ts = new TargetSource() {
 			@Override
 			public Class<?> getTargetClass() {
@@ -93,8 +94,12 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 				return false;
 			}
 			@Override
+			// Meta- 在使用了@Lazy之后，Spring解析属性时会临时创建一个代理对象赋值。
+			// Meta- 只有是在调用属性的方法时，才会去调用getTarget() 方法来返回被代理对象。
+			// Meta- 拿到被代理对象之后再去执行被代理对象的方法
 			public Object getTarget() {
 				Set<String> autowiredBeanNames = (beanName != null ? new LinkedHashSet<>(1) : null);
+				// Meta- 去解析依赖关系 属性注入
 				Object target = dlbf.doResolveDependency(descriptor, beanName, autowiredBeanNames, null);
 				if (target == null) {
 					Class<?> type = getTargetClass();

@@ -234,7 +234,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 		this.registriesPostProcessed.add(registryId);
 
-		// Meta- 解析配置类
+		// Meta- 解析配置类 并标记full liter配置类
+		// Meta- 加了@Configuration 为full配置类
 		processConfigBeanDefinitions(registry);
 	}
 
@@ -259,6 +260,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		//使用Cglib对配置类进行动态代理，---->原因有下
 		// 1. 对@Bean方法拦截处理， 增强， 如在一个@Bean中取调用了另一个@Bean，  使用Cglib代理后可以 直接去beanDefinitionMap中去获取，通过getBean()
 		//	不会再去一次一次创建
+		// Meta- 处理@Configuration， 生成bean代理对象。
+		// Meta- cglib增强代理
 		enhanceConfigurationClasses(beanFactory);
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
@@ -291,6 +294,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			//即是判断配置类是否有@Configuration注解
 			//筛选配置类
 			// Meta- 判断是否是配置类
+			// Meta- 标记配置为 full - lite
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				//满足则添加至配置类集合中
 				// Meta- 将所有满足筛选条件的配置类添加到配置类集合中

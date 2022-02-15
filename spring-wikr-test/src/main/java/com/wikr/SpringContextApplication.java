@@ -25,24 +25,24 @@ public class SpringContextApplication {
 //		context.register(AppConfig.class);
 		// Meta- 手动给context设置自定义的beanFactoryPostProcessor
 //		context.addBeanFactoryPostProcessor(new WikrBeanFactoryPostProcessor());
-		User bean = context.getBean(User.class);
-		bean.test();
-		// 获取beanDefinition
-		AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition()
-				.getBeanDefinition();
-		beanDefinition.setBeanClass(User.class);
-		beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(new Object());
-		beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(1, new Object());
-		// 注册beanDefinition
-		context.registerBeanDefinition("user", beanDefinition);
+//		User bean = context.getBean(User.class);
+//		bean.test();
+//		// 获取beanDefinition
+//		AbstractBeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition()
+//				.getBeanDefinition();
+//		beanDefinition.setBeanClass(User.class);
+//		beanDefinition.getConstructorArgumentValues().addGenericArgumentValue(new Object());
+//		beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(1, new Object());
+//		// 注册beanDefinition
+//		context.registerBeanDefinition("user", beanDefinition);
+////
+////		// Meta- 容器销毁方法。
+////		context.close();
 //
-//		// Meta- 容器销毁方法。
-//		context.close();
-
-		UserService userService = (UserService) context.getBean("userService");
-		OrderService orderService = (OrderService) context.getBean("orderService");
-		userService.test();
-		orderService.test();
+//		UserService userService = (UserService) context.getBean("userService");
+//		OrderService orderService = (OrderService) context.getBean("orderService");
+//		userService.test();
+//		orderService.test();
 
 	}
 }

@@ -544,18 +544,22 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
-				// Meta0- 模板方法  提供给子类实现 （web）
+				// Meta- 模板方法  提供给子类实现 （web）
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
 				// 调用beanFactory的后置处理器， 将class扫描成beanDefinition
 				// Meta- 1. 调用构造方法中初始化的scanner.scan()
 				// Meta- 2. 将扫描的class文件按照要求注册成BeanDefinition，并保存beanName
-				// Meta- 最主要的事情就是执行两个方法：
-				// Meta- BeanFactoryPostProcessor#postProcessBeanFactory
-				// Meta- 这个方法可以对beanDefinition进行修改
+				// Meta- 最主要的事情就是按序执行两个方法：
 				// Meta- BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry
-				// Meta- 这个方法可以注册beanDefinition
+				// Meta- 3. 这个方法可以注册beanDefinition
+				// Meta- 3.1: 通过new Reader 时初始化的 ConfigurationClassPostProcessor 的BeanDefinition，
+				// 			getBean() -> 调用postProcessBeanDefinitionRegistry()
+				//  	 	-> 处理在筛选出所有符合条件的配置类。
+				// Meta- BeanFactoryPostProcessor#postProcessBeanFactory
+				// Meta- 4. 这个方法可以对beanDefinition进行修改
+				// Meta- 4.1 解析@Configuration注解，生成配置类的代理对象。
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -570,8 +574,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				// 初始化事件多播器  （事件由观察者模式实现）
-				// spring支持两种事件实现方式 1： 基于接口； 2： 基于注解
+				// Meta- spring支持两种事件实现方式 1： 基于接口； 2： 基于注解
 				// Meta- 初始化事件广播器（发布器）。 -> applicationEventMulticaster
 				// Meta- 如果自定义了使用自己的 ，没有则默认SimpleApplicationEventMulticaster
 				// Meta- 观察者设计模式
@@ -585,7 +588,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//获得所有的监听器名字
 				//防止bean是懒加载
 				// Meta- 初始化所有的事件监听器。添加到上一步初始化的事件广播器中。
-				// Meta- @see AnnotationConfigUtils.registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
+				// Meta- wikr-@see AnnotationConfigUtils.registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
 				// Meta- 1. 注册 EventListenerMethodProcessor
 				// Meta- 2. 注册 DefaultEventListenerFactory
 				// Meta- 3. 注册 ApplicationListenerDetector @see prepareBeanFactory(beanFactory);
@@ -595,7 +598,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Instantiate all remaining (non-lazy-init) singletons.
 				// Meta- 初始化占位符处理 ${}
-				// Meta- 解析单例bean  循环依赖 处理。 循环依赖 并发处理。（123级缓存）
+				// Meta- 解析单例bean  循环依赖处理（123级缓存）
+				// Meta- 扫描成BeanDefinition -> 实例化 -> 属性注入（推断构造方法、@Autowired） -> 初始化（后：AOP） -> 销毁
+				// Meta- 生命周期每个过程都伴随着BeanPostProcessor处理扩展
 				// Meta- 1. 创建所有的非懒加载单例bean。
 				// Meta- 2. 合并scan得到的beanDefinition(父子beanDefinition)
 				// Meta- 2. 处理FactoryBean
@@ -606,7 +611,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Meta- Spring容器的生命周期 -> Lifecycle -> SmartLifecycle
 				// Meta- spring容器启动完成事件
 				// Meta- 监听容器启动完成 可以使用启动完成事件 也可以使用监听生命周期。
-				// Meta- @see WikrLifecycle
+				// Meta- wikr-@see WikrLifecycle
 				finishRefresh();
 			}
 
@@ -720,14 +725,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Configure the bean factory with context callbacks.
 		// Meta- 添加第一个beanPostProcessor ->
-		// Meta- @see ApplicationContextAwareProcessor.postProcessBeforeInitialization 用来处理Aware回调。
+		// Meta- wikr-@see ApplicationContextAwareProcessor.postProcessBeforeInitialization 用来处理Aware回调。
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 
 		// Meta- 设置Spring注册bean时需要忽略的接口类型。
 		// Meta- 添加到集合中ignoredDependencyInterfaces
 		// Meta- a如果一个类实现了EnvironmentAware接口 那么如果在实现的set方法上添加@Autowired 那么会调用两次
 		// Meta- 但是如果在@Bean中设置autowired = Autowired.BY_TYPE 则不会 ，因为在Spring自带的依赖注入中判断了这个集合。
-		// Meta- @see AbstractAutowireCapableBeanFactory.unsatisfiedNonSimpleProperties -> !isExcludedFromDependencyCheck(pd)
+		// Meta- wikr-@see AbstractAutowireCapableBeanFactory.unsatisfiedNonSimpleProperties -> !isExcludedFromDependencyCheck(pd)
 		// Meta- 下面的接口都是有一个set方法
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);

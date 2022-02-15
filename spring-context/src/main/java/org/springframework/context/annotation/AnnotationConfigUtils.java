@@ -160,6 +160,7 @@ public abstract class AnnotationConfigUtils {
 			// Meta- ContextAnnotationAutowireCandidateResolver用来判断某个bean是否可以注入
 			// Meta- 处理@Lazy注解
 			// Meta- 可以查看其父类
+			// Meta- 父类用来处理@Qualifier。与@Autowired相关
 			if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
 				beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
 			}
@@ -224,8 +225,8 @@ public abstract class AnnotationConfigUtils {
 			beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
 		}
 
-		// Meta- 注册事件相关的bean。
-		// Meta- 将EventListenerMethodProcessor找出的Map<Method, EventListener> 封装成对应的事件监听器对象
+		// Meta- 注册事件相关的bean。 DefaultEventListenerFactory
+		// Meta- 将 EventListenerMethodProcessor 找出的Map<Method, EventListener> 封装成对应的事件监听器对象
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
 			def.setSource(source);

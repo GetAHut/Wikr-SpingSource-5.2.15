@@ -316,6 +316,7 @@ class ConfigurationClassParser {
 				//拿到配置了@Compoent注解的bean 。其中会排除配置类本身
 				// Meta- 扫描 @see ClassPathBeanDefinitionScanner#doScan
 				// Meta- 得到扫描出来的所有bean
+				// Meta- scanner.scan()
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
@@ -342,7 +343,7 @@ class ConfigurationClassParser {
 
 		// Process any @ImportResource annotations
 		// Meta- 处理@ImportResource注解
-		// Meta- @ImportResource("Spring.xml")
+		// Meta- wikr-@ImportResource("Spring.xml")
 		AnnotationAttributes importResource =
 				AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
 		if (importResource != null) {

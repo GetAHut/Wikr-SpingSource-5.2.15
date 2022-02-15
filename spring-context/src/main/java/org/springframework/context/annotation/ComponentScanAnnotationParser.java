@@ -131,6 +131,7 @@ class ComponentScanAnnotationParser {
 				return declaringClass.equals(className);
 			}
 		});
+		// Meta- 扫描beanDefinition逻辑
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 
