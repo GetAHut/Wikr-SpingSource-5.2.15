@@ -41,11 +41,17 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+	// Meta- 注册事务相关的advisors
+	// Meta- 有了这个advisors 才能去spring容器中判断哪些bean 需要做事务相关的切面逻辑
+	// Meta- transactionInterceptor -> 同样在这个bean中注册 事务相关的拦截器 advice
+	// Meta- TransactionAttributeSource -> 这个bean中 定义了Pointcut
 	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor(
 			TransactionAttributeSource transactionAttributeSource, TransactionInterceptor transactionInterceptor) {
 
 		BeanFactoryTransactionAttributeSourceAdvisor advisor = new BeanFactoryTransactionAttributeSourceAdvisor();
+		// Meta- 设置pointcut
 		advisor.setTransactionAttributeSource(transactionAttributeSource);
+		// Meta- 设置advice
 		advisor.setAdvice(transactionInterceptor);
 		if (this.enableTx != null) {
 			advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
@@ -56,12 +62,17 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionAttributeSource transactionAttributeSource() {
+		// Meta- AnnotationTransactionAttributeSource 中定义了pointcut
+		// Meta- 用来去判断哪个类 或者哪个方法上添加了@Transactional注解
+		// Meta- 解析@Transactional
 		return new AnnotationTransactionAttributeSource();
 	}
 
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+	// Meta- 注册事务相关拦截器
 	public TransactionInterceptor transactionInterceptor(TransactionAttributeSource transactionAttributeSource) {
+		// Meta- 事务相关 回滚 提交都在这个拦截器中处理
 		TransactionInterceptor interceptor = new TransactionInterceptor();
 		interceptor.setTransactionAttributeSource(transactionAttributeSource);
 		if (this.txManager != null) {

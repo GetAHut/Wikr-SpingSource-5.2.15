@@ -627,10 +627,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Meta- 给循环依赖相关的缓存做处理
 			// Meta- 给三级缓存 singletonFactories 添加lambda表达式逻辑
 			// Meta- 此lambda表达式逻辑 也是三级缓存的作用： 首先三级缓存是解决了循环依赖的关键。
-			// Meta- 	理由： 1. 循环依赖 是因为A需要B， B需要A，两者都拿不到对应的对象，因此无线循环。
-			// Meta- 		  2. 在这个缓存中的lambda表达式 是必须要返回一个bean对象的。 但是这个对象是半成品（没有经历完整的bean的生命周期）
-			// Meta-		  	在这里面会判断这个bean需不需要进行AOP， 如果不需要，则返回一个bean的原始对象，如果需要则返回一个bean的AOP代理对象。
-			// Meta-		  3. 因为这个半成品对象（不管是原始对象，还是代理对象）都能够临时提供给B做属性赋值，因此破开了循环依赖链。
+			// Meta- 理由： 1. 循环依赖 是因为A需要B， B需要A，两者都拿不到对应的对象，因此无线循环。
+			//    	 	   2. 在这个缓存中的lambda表达式 是必须要返回一个bean对象的。 但是这个对象是半成品（没有经历完整的bean的生命周期）
+			//    	 	  	在这里面会判断这个bean需不需要进行AOP， 如果不需要，则返回一个bean的原始对象，如果需要则返回一个bean的AOP代理对象。
+			//    	 	   3. 因为这个半成品对象（不管是原始对象，还是代理对象）都能够临时提供给B做属性赋值，因此破开了循环依赖链。
 			// Meta- 清除二级缓存中的这个beanName
 
 			// Meta- AsyncAnnotationBeanPostProcessor这个对象会改变bean
@@ -649,8 +649,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Meta- 5. bean的初始化。
 			// Meta- AOP
 			// Meta- exposedObject: 如果是没有循环依赖正常执行完生命周期，且进行了AOP，此处返回的是AOP的代理对象
-			// Meta- 				如果没有进行AOP，那么就是正常的普通bean
-			// Meta- 				如果进行了循环依赖、 无关是否AOP，返回的都是普通的bean，所以还需要处理。
+			//  	 				如果没有进行AOP，那么就是正常的普通bean
+			//  	 				如果进行了循环依赖、 无关是否AOP，返回的都是普通的bean，所以还需要处理。
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1036,15 +1036,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					// Meta- TODO 第六次 调用POST-PROCESSOR （循环依赖时，三级缓存处理）
 					// Meta- 如果开启了@EnableAspectJAutoProxy 就是开启了AOP
-					// Meta- @see AbstractAutoProxyCreator.getEarlyBeanReference
+					// Meta- wikr-@see AbstractAutoProxyCreator.getEarlyBeanReference
 					// Meta- 提前对bean AOP
 					// Meta- 如果开启了@EnableAsync注解 开启异步调用。
 					// Meta- 配合@Async 同样会再次产生一个代理对象。
 					// Meta- AsyncAnnotationBeanPostProcessor
 					// Meta- 这个调用是在AOP之后，所以如果开启了异步调用，产生的代理对象会将AOP代理对象再次覆盖。
 					// Meta- 这样循环依赖就会出现问题。
-					// Meta-
-					// Meta-
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
 					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
 				}
@@ -1284,8 +1282,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Meta- 处理@Bean逻辑
 		// Meta- 与@Autowired类似
-		// Meta- @Bean 创建的bean 其实 是factoryMethod， 因为AppConfig本身就是一个bean。 在bean中调用工厂方法去创建另外一个bean
-		// Meta- @Bean 中可以存在两种方式 一种静态、一种非静态。
+		// Meta- wikr-@Bean 创建的bean 其实 是factoryMethod， 因为AppConfig本身就是一个bean。 在bean中调用工厂方法去创建另外一个bean
+		// Meta- wikr-@Bean 中可以存在两种方式 一种静态、一种非静态。
 		// Meta- 其思想原理都是在AppConfig.class中设置factoryMethod 或者factoryMethodName
 		// Meta- 如果出现同名，参数不同的方法 会将isFactoryMethodUnique 设置成false。其后逻辑与推断构造方法就类似了。
 		// Meta- 因为isFactoryMethodUnique = false 就相当于找到了多个方法（类比于多个构造方法这样） spring需要去判断是使用哪一个
@@ -1313,7 +1311,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Meta- 这里则去取出缓存的构造方法以及方法参数
 		if (resolved) {
 			if (autowireNecessary) {
-				// Meta-  autowireConstructor() -> 方法内去拿到缓存好的构造方法的入参
+				// Meta- autowireConstructor() -> 方法内去拿到缓存好的构造方法的入参
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
@@ -1327,16 +1325,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Meta- 调用BeanPostProcessor处理
 		// Meta- 推断方法处理情况：
 		// Meta- 通过调用BeanPostProcessor来处理
-		// Meta- @see AutowiredAnnotationBeanPostProcessor#determineCandidateConstructors
-		// Meta- 	1. 有@Autowired注解的构造方法：
-		// Meta-		1.1: 只有一个required = true的构造方法，直接返回此构造方法
-		// Meta-		1.2: 如果有多个required = true的构造方法 ，直接抛出异常
-		// Meta-		1.3: 如果有一个required = true 其他构造方法为 required = false， 直接抛出异常
-		// Meta-		1.4: 如果没有required = true，且都为required = false 和 加了注解的无参构造方法 一起返回。
-		// Meta-	2. 没有@Autowired注解的构造方法
-		// Meta-		2.1: 有多个构造方法 抛出异常
-		// Meta-		2.2: 只有一个有参的构造方法，返回此构造方法
-		// Meta-		2.3: 只有一个无参的构造方法，返回null
+		// Meta- wikr-@see AutowiredAnnotationBeanPostProcessor#determineCandidateConstructors
+		// 		 1. 有@Autowired注解的构造方法：
+		// 			1.1: 只有一个required = true的构造方法，直接返回此构造方法
+		// 			1.2: 如果有多个required = true的构造方法 ，直接抛出异常
+		// 			1.3: 如果有一个required = true 其他构造方法为 required = false， 直接抛出异常
+		// 			1.4: 如果没有required = true，且都为required = false 和 加了注解的无参构造方法 一起返回。
+		// 		 2. 没有@Autowired注解的构造方法
+		// 			2.1: 有多个构造方法 抛出异常
+		// 			2.2: 只有一个有参的构造方法，返回此构造方法
+		// 			2.3: 只有一个无参的构造方法，返回null
 		// Meta- 针对2.3这种情况 因为最终会判断 你是否提供了一个构造方法， 如果没有提供可选的构造方法 就会使用无参构造方法来创建实例
 		// Meta- 所以在2.3这一步 不需要多此一举返回无参构造方法。
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
@@ -1555,7 +1553,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Meta- @Bean(autowire = Autowire.BY_NAME) @Bean(autowire = Autowire.BY_TYPE)这类（已经过时，不常用）
 		int resolvedAutowireMode = mbd.getResolvedAutowireMode();
 		// Meta- 如果是byType：则是通过set方法参数的类型去找bean
-		// Meya- 如果是byName：则是通过set方法的截取set后剩下的名字去找bean
+		// Meta- 如果是byName：则是通过set方法的截取set后剩下的名字去找bean
 		// Meta- 两者找到属性对应的bean之后都没有去做赋值操作。而是存放到pvsMap中去。
 		if (resolvedAutowireMode == AUTOWIRE_BY_NAME || resolvedAutowireMode == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
@@ -2005,6 +2003,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Meta- 6. bean的初始化
+			// Meta- InitializingBean 接口调用
+			// Meta- 处理init方法
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {

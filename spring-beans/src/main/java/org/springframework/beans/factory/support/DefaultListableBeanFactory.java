@@ -937,7 +937,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					}
 				}
 				else {
-					// Meta- 创建bean对象
+					// Meta- 创建单例非FactoryBean 的 bean对象
 					getBean(beanName);
 				}
 			}
@@ -1017,10 +1017,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
+			// Meta- beanDefinition 注册 覆盖
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {
-			// Meta- 检车bean是否开始创建，并没哟被标记成已创建。
+			// Meta- 检车bean是否开始创建，并没有被标记成已创建。
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
 				synchronized (this.beanDefinitionMap) {

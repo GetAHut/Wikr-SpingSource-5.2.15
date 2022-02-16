@@ -297,6 +297,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	// Meta- bean在初始化完成之后调用。执行AOP逻辑
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
+		System.out.println("wikr- AOP 逻辑执行, beanName : " + beanName);
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			// Meta- 多一步判断 bean是否已经AOP过

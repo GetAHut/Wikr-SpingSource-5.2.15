@@ -79,6 +79,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * of a {@code BeanDefinitionRegistry}
 	 */
 	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry) {
+		// Meta- 初始化时注册includeFilters -> @Component、@ManagedBean 、@Named
 		this(registry, true);
 	}
 
@@ -291,7 +292,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 				candidate.setScope(scopeMetadata.getScopeName());
 				// Meta- 设置beanName：
 				// Meta- beanName: 判断分两步： 1. 如果在注解上value有值，则取其值，2. 如果注解上没有，则默认首字母小写设置beanName
-				// Meta- @see: AnnotationBeanNameGenerator#buildDefaultBeanName
+				// Meta- wikr-@see: AnnotationBeanNameGenerator#buildDefaultBeanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 
 				if (candidate instanceof AbstractBeanDefinition) {
@@ -301,19 +302,21 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 
 				if (candidate instanceof AnnotatedBeanDefinition) {
 					// Meta- 解析 @Lazy、 @Primary、 @DependsOn、 @Role、 @Description
+					// Meta- 设置成beanDefinition属性
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
 
 				// Meta- 检查容器中是否已经存在beanName
 				// Meta- 如果不存在则注册到beanDefinitionMap中。
-				// Meta- DefaultListableBeanFactory.registerBeanDefinition().beanDefinitionMap.put(beanName, beanDefinition);
+				// Meta- wikr-DefaultListableBeanFactory.registerBeanDefinition().beanDefinitionMap.put(beanName, beanDefinition);
 				if (checkCandidate(beanName, candidate)) {
 					// Meta- BeanDefinitionHolder -> beanDefinition持有对象。
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
-					// Meta- 注册beanDefinition
+					// Meta- 注册beanDefinition -> beanDefinitionMap
+					// Meta- 同时将所有beanName保存 -> beanDefinitionNames
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}

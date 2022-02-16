@@ -140,6 +140,8 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
 		for (TransactionAnnotationParser parser : this.annotationParsers) {
+			// Meta- wikr-@see SpringTransactionAnnotationParser#isCandidateClass
+			// Meta- 判断是否在类上有 Transactional 注解
 			if (parser.isCandidateClass(targetClass)) {
 				return true;
 			}

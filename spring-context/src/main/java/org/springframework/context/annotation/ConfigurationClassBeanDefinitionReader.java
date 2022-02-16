@@ -154,7 +154,7 @@ class ConfigurationClassBeanDefinitionReader {
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
 
 		// Meta- 解析存储配置类中的importBeanDefinitionRegistrars属性
-		// Meta- wirk-@Import中的类 实现的ImportBeanDefinitionRegistrar接口
+		// Meta- wirk-@Import中的类 实现的 ImportBeanDefinitionRegistrar 接口
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
@@ -224,6 +224,9 @@ class ConfigurationClassBeanDefinitionReader {
 		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata, beanName);
 		beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
 
+		// Meta- 判断@Bean方法 是不是静态的。
+		// Meta- factoryMethod staticFactoryMethod
+		// Meta-
 		if (metadata.isStatic()) {
 			// static @Bean method
 			if (configClass.getMetadata() instanceof StandardAnnotationMetadata) {
@@ -232,6 +235,7 @@ class ConfigurationClassBeanDefinitionReader {
 			else {
 				beanDef.setBeanClassName(configClass.getMetadata().getClassName());
 			}
+			// Meta- 设置 isFactoryMethodUnique = true
 			beanDef.setUniqueFactoryMethodName(methodName);
 		}
 		else {
@@ -244,6 +248,7 @@ class ConfigurationClassBeanDefinitionReader {
 			beanDef.setResolvedFactoryMethod(((StandardMethodMetadata) metadata).getIntrospectedMethod());
 		}
 
+		// Meta- 设置@Bean注解方法的依赖注入模型  - 构造器注入
 		beanDef.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
 		beanDef.setAttribute(org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor.
 				SKIP_REQUIRED_CHECK_ATTRIBUTE, Boolean.TRUE);

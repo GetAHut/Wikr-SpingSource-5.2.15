@@ -137,6 +137,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 				executor.execute(() -> invokeListener(listener, event));
 			}
 			else {
+				// Meta- 发布注册多播器时的事件
 				invokeListener(listener, event);
 			}
 		}

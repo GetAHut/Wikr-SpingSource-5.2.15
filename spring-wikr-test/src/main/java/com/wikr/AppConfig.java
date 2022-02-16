@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.context.annotation.*;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 // Meta- 开启AOP  通过@Import注册了一个BeanPostProcessor
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 //@ComponentScan("com.wikr")
 //@EnableAsync
 @WikrMapperScan("com.wikr.mapper")
+@EnableTransactionManagement
 public class AppConfig  {
 
 	/**

@@ -62,7 +62,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	@Nullable
 	default Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName)
 			throws BeansException {
-
+		System.out.println("wikr- 推断构造方法 -> beanName :" + beanName);
 		return null;
 	}
 
@@ -88,6 +88,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
 	default Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
+		System.out.println("wikr- 三级缓存处理,循环依赖 -> beanName :" + beanName);
 		return bean;
 	}
 

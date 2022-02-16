@@ -264,7 +264,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	// Meta- 认为哪一个构造方法上面加了@Autowired注解的 表示该构造方法可用
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
-
+		System.out.println("wikr- 推断构造方法 -> beanName : " + beanName);
 		// Let's check for lookup methods here...
 		// Meta- 处理@Lookup注解
 		// Meta- 如果是带了@Lookup注解，则添加到集合中 在实例化的时候 处理
@@ -448,8 +448,8 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		try {
 			// Meta- 开始属性赋值
 			// Meta- 将所有的注入点封装成了InjectionMetadata对象， 而这里处理的是Autowired和Value注解对应的注入点。
-			// Meta- @see AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement.inject()
-			// Meta- @see AutowiredAnnotationBeanPostProcessor.AutowiredMethodElement.inject()
+			// Meta- wikr-@see AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement.inject()
+			// Meta- wikr-@see AutowiredAnnotationBeanPostProcessor.AutowiredMethodElement.inject()
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {

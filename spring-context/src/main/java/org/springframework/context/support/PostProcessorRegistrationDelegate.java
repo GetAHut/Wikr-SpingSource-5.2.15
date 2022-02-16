@@ -124,6 +124,9 @@ final class PostProcessorRegistrationDelegate {
 			// Meta- 执行BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry
 			// Meta- 完成bean的扫描逻辑
 			// Meta- BeanFactoryPostProcessor#postProcessBeanFactory这个方法暂时还没有执行
+			// Meta- 执行 ConfigurationClassPostProcessor#postProcessBeanDefinitionRegistry
+			// Meta- 解析配置类
+			// Meta- 处理了@Bean 方法 注册为beanDefinition
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			// Meta- 执行结束后清除
 			currentRegistryProcessors.clear();

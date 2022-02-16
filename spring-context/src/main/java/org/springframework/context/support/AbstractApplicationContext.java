@@ -574,7 +574,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				// Meta- spring支持两种事件实现方式 1： 基于接口； 2： 基于注解
+				// Meta- spring支持两种事件实现方式 1： 基于接口； 2： 基于注解 @EventListener
 				// Meta- 初始化事件广播器（发布器）。 -> applicationEventMulticaster
 				// Meta- 如果自定义了使用自己的 ，没有则默认SimpleApplicationEventMulticaster
 				// Meta- 观察者设计模式
@@ -929,14 +929,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
-		//将所有监听器的名字加入listenerBeanNames中 （名字）
-		//在后面还会再次通过后置处理器初始化所有监听器的bean
+		// Meta- 获取所有ApplicationListener.class 的beanName
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
 		}
 
 		// Publish early application events now that we finally have a multicaster...
+		// Meta- 在多播器设置之前需要发布的事件
 		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
 		this.earlyApplicationEvents = null;
 		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {

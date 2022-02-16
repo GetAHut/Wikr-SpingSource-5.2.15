@@ -57,6 +57,8 @@ public class AutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 	 */
 	@Override
 	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		// Meta-
+		System.out.println("wikr- 事务启动！");
 		boolean candidateFound = false;
 		Set<String> annTypes = importingClassMetadata.getAnnotationTypes();
 		for (String annType : annTypes) {
@@ -70,6 +72,8 @@ public class AutoProxyRegistrar implements ImportBeanDefinitionRegistrar {
 					Boolean.class == proxyTargetClass.getClass()) {
 				candidateFound = true;
 				if (mode == AdviceMode.PROXY) {
+					// Meta- 注册 InfrastructureAdvisorAutoProxyCreator.class
+					// Meta- AOP的后置处理器 这里只用来处理事务问题
 					AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);
 					if ((Boolean) proxyTargetClass) {
 						AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);

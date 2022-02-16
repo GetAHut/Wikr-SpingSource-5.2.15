@@ -448,13 +448,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 							// Mate- 与ScannedGenericBeanDefinition对应的还有一个AnnotatedGenericBeanDefinition
 							// Mate- 这个是由@Bean注解生成的bean 则生成AnnotatedGenericBeanDefinition
 							// Meta- 在构建ScannedGenericBeanDefinition， 会将class的className赋值给beanDefinition
+							// Meta- 扫描会存在两种情况
+							// Meta- 1. scanner 扫描 生成的beanDefinition会封装成 ScannedGenericBeanDefinition
+							// Meta- 2. @Bean 注解生成的方法会 封装成 AnnotatedGenericBeanDefinition
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
 
 							// Meta- 再次判断： 在上一步判断了是否可以成为一个bean。（是否类上有@Component注解）
 							// Meta- 这里判断此注解是否在接口、抽象类、或者是不是一个独立的类， 不是则继续筛选不能成为一个bean。
 							// Meta- 如果是一个抽象类， 但是其有一个方法上存在@Lookup注解， 则可以成为一个bean
-							// Meta- @Lookup注解用法 TODO
+							// Meta- wikr-@Lookup注解用法 TODO
 							if (isCandidateComponent(sbd)) {
 								if (debugEnabled) {
 									logger.debug("Identified candidate component class: " + resource);

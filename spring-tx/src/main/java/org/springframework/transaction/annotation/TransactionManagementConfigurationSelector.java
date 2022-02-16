@@ -47,9 +47,14 @@ public class TransactionManagementConfigurationSelector extends AdviceModeImport
 	protected String[] selectImports(AdviceMode adviceMode) {
 		switch (adviceMode) {
 			case PROXY:
+				// Meta- 默认 就是Proxy
+				// Meta- 通过@Import注解 导入了 AutoProxyRegistrar ProxyTransactionManagementConfiguration 两个bean
+				// Meta- AutoProxyRegistrar -> 注册了 InfrastructureAdvisorAutoProxyCreator.class  开启AOP
+				// Meta- ProxyTransactionManagementConfiguration -> 注册了三个bean advisors
 				return new String[] {AutoProxyRegistrar.class.getName(),
 						ProxyTransactionManagementConfiguration.class.getName()};
 			case ASPECTJ:
+				// Meta- 与AspectJ相关
 				return new String[] {determineTransactionAspectClass()};
 			default:
 				return null;

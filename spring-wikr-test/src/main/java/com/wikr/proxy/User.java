@@ -1,5 +1,7 @@
 package com.wikr.proxy;
 
+import javax.annotation.PreDestroy;
+
 /**
  * @Author: xyt
  * @Date: 2022/2/15 18:38

@@ -290,12 +290,12 @@ class ConstructorResolver {
 				}
 
 				// Meta- 计算分值的目的 是因为可能构造方法参数相同
-				// Meta- 实例：
-				// Meta-  1. public User(Order o1, Order o2, OrderInterface o3)
-				// Meta-     public User(Order o1, Order o2, Order o3)
+				// Meta- 实例：(宽松算法)
+				// Meta- 1. public User(Order o1, Order o2, OrderInterface o3)
+				// Meta-    public User(Order o1, Order o2, Order o3)
 				// Meta- 	这两情况下下面分值更小， 因为实现类比接口更匹配
-				// Meta-  2. public User(Order o1, Order o2, OrderInterface o3)
-				// Meta-	 public User(Order o1, OrderInterface o3, Order o2)
+				// Meta- 2. public User(Order o1, Order o2, OrderInterface o3)
+				// Meta-	public User(Order o1, OrderInterface o3, Order o2)
 				// Meta-	这两种情况下分值相同。
 				// Meta- 当前遍历bean 获取参数时计算出来的分值  与minTypeDiffWeight判断
 				// Meta- 匹配度越高分值越小， 取分值最小
