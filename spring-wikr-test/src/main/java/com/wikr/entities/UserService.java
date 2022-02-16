@@ -1,5 +1,6 @@
 package com.wikr.entities;
 
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ public class UserService {
 	private OrderService orderService;
 
 	public void test(){
+//		Object o = AopContext.currentProxy();
 		System.out.println(orderService);
 	}
 

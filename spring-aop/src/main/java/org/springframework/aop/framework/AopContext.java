@@ -82,6 +82,7 @@ public final class AopContext {
 	 */
 	@Nullable
 	static Object setCurrentProxy(@Nullable Object proxy) {
+		// Meta- 包装ThreadLocal
 		Object old = currentProxy.get();
 		if (proxy != null) {
 			currentProxy.set(proxy);

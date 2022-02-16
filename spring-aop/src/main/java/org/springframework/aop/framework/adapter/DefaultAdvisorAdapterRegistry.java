@@ -47,6 +47,9 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 	 * Create a new DefaultAdvisorAdapterRegistry, registering well-known adapters.
 	 */
 	public DefaultAdvisorAdapterRegistry() {
+		// Meta- 适配器模式
+		// Meta- ProxyFactory 支持的四种advice
+		// Meta- 这里三种，还有一个顶级接口 MethodInterceptor
 		registerAdvisorAdapter(new MethodBeforeAdviceAdapter());
 		registerAdvisorAdapter(new AfterReturningAdviceAdapter());
 		registerAdvisorAdapter(new ThrowsAdviceAdapter());
@@ -77,11 +80,16 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 
 	@Override
 	public MethodInterceptor[] getInterceptors(Advisor advisor) throws UnknownAdviceTypeException {
+		// Meta- MethodInterceptor集合
 		List<MethodInterceptor> interceptors = new ArrayList<>(3);
+		// Meta- 获取当前的advice
 		Advice advice = advisor.getAdvice();
+		// Meta- 如果本来就是 直接添加
 		if (advice instanceof MethodInterceptor) {
 			interceptors.add((MethodInterceptor) advice);
 		}
+		// Meta- 通过适配器模式来判断符合哪有adapter，调用对应的getInterceptor() 来处理成MethodInterceptor
+		// Meta- 将结果保存
 		for (AdvisorAdapter adapter : this.adapters) {
 			if (adapter.supportsAdvice(advice)) {
 				interceptors.add(adapter.getInterceptor(advisor));

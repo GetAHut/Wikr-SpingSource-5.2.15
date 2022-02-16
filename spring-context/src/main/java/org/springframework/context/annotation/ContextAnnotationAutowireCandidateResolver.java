@@ -129,11 +129,12 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 			}
 		};
 
-		// Meta- 代理工厂。
+		// Meta- 代理工厂。（封装了cglib代理 、jdk动态代理）
 		ProxyFactory pf = new ProxyFactory();
 		pf.setTargetSource(ts);
 		Class<?> dependencyType = descriptor.getDependencyType();
 		if (dependencyType.isInterface()) {
+			// Meta- 添加接口 
 			pf.addInterface(dependencyType);
 		}
 		// Meta- 返回一个代理对象。

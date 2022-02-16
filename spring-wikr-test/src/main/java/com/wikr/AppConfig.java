@@ -9,11 +9,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 @Configuration
-//@EnableAspectJAutoProxy
+// Meta- 开启AOP  通过@Import注册了一个BeanPostProcessor
+@EnableAspectJAutoProxy
 //@ComponentScan("com.wikr")
 //@EnableAsync
 @WikrMapperScan("com.wikr.mapper")
-public class AppConfig {
+public class AppConfig  {
 
 	/**
 	 * Spring自带的属性注入方式， （已经过时。）

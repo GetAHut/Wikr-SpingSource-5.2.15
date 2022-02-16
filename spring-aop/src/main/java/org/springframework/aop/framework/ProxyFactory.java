@@ -107,6 +107,8 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * @return the proxy object
 	 */
 	public Object getProxy(@Nullable ClassLoader classLoader) {
+		// Meta- 通过 createAopProxy() -> 可以返回到底使用什么代理
+		// Meta- getProxy() 去产生对象的代理对象
 		return createAopProxy().getProxy(classLoader);
 	}
 

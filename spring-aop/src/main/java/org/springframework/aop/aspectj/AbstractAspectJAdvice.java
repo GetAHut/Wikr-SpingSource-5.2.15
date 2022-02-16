@@ -163,7 +163,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	 * @param pointcut the AspectJ expression pointcut
 	 * @param aspectInstanceFactory the factory for aspect instances
 	 */
-	public AbstractAspectJAdvice(
+	AbstractAspectJAdvice(
 			Method aspectJAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aspectInstanceFactory) {
 
 		Assert.notNull(aspectJAdviceMethod, "Advice method must not be null");
@@ -623,6 +623,8 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 			@Nullable JoinPointMatch jpMatch, @Nullable Object returnValue, @Nullable Throwable ex)
 			throws Throwable {
 
+		// Meta- 执行切面逻辑
+		// Meta- argBinding() -> 绑定参数
 		return invokeAdviceMethodWithGivenArgs(argBinding(getJoinPoint(), jpMatch, returnValue, ex));
 	}
 

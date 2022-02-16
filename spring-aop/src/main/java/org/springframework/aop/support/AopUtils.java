@@ -341,6 +341,7 @@ public abstract class AopUtils {
 		// Use reflection to invoke the method.
 		try {
 			ReflectionUtils.makeAccessible(method);
+			// Meta- 执行没有代理逻辑的普通方法
 			return method.invoke(target, args);
 		}
 		catch (InvocationTargetException ex) {

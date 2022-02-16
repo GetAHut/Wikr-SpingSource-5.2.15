@@ -117,7 +117,11 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 	@Override
 	public List<Advisor> getAdvisors(MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
+
+		// Meta- 获取bean的类型
 		Class<?> aspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();
+
+		// Meta- 获取bean的名字
 		String aspectName = aspectInstanceFactory.getAspectMetadata().getAspectName();
 		validate(aspectClass);
 
@@ -127,6 +131,12 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 				new LazySingletonAspectInstanceFactoryDecorator(aspectInstanceFactory);
 
 		List<Advisor> advisors = new ArrayList<>();
+		// Meta- getAdvisorMethods()
+		// Meta- 获取类里除了加了 @Pointcut 注解的其他所有方法
+		// Meta- 对所有拿到的方法排序
+		// Meta- 优先通过Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class顺序排序
+		// Meta- 在通过方法名称排序
+		// Meta- 遍历获取到的method
 		for (Method method : getAdvisorMethods(aspectClass)) {
 			// Prior to Spring Framework 5.2.7, advisors.size() was supplied as the declarationOrderInAspect
 			// to getAdvisor(...) to represent the "current position" in the declared methods list.
@@ -136,6 +146,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 			// discovered via reflection in order to support reliable advice ordering across JVM launches.
 			// Specifically, a value of 0 aligns with the default value used in
 			// AspectJPrecedenceComparator.getAspectDeclarationOrder(Advisor).
+			// Meta- 将当前方法封装成 advisors 一个advisors = pointcut + advice
 			Advisor advisor = getAdvisor(method, lazySingletonAspectInstanceFactory, 0, aspectName);
 			if (advisor != null) {
 				advisors.add(advisor);
@@ -163,11 +174,15 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		final List<Method> methods = new ArrayList<>();
 		ReflectionUtils.doWithMethods(aspectClass, method -> {
 			// Exclude pointcuts
+			// Meta- 排除@Pointcut注解的方法
 			if (AnnotationUtils.getAnnotation(method, Pointcut.class) == null) {
 				methods.add(method);
 			}
 		}, ReflectionUtils.USER_DECLARED_METHODS);
 		if (methods.size() > 1) {
+			// Meta- 对所有拿到的方法排序
+			// Meta- 优先通过Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class顺序排序
+			// Meta- 在通过方法名称排序
 			methods.sort(METHOD_COMPARATOR);
 		}
 		return methods;
@@ -202,14 +217,18 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	public Advisor getAdvisor(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,
 			int declarationOrderInAspect, String aspectName) {
 
+		// Meta- 校验
 		validate(aspectInstanceFactory.getAspectMetadata().getAspectClass());
 
+		// Meta- 解析如@Before注解中的表达式 -> 解析成Pointcut
 		AspectJExpressionPointcut expressionPointcut = getPointcut(
 				candidateAdviceMethod, aspectInstanceFactory.getAspectMetadata().getAspectClass());
+		// Meta- 如果解析出来的pointcut = null 则返回。
 		if (expressionPointcut == null) {
 			return null;
 		}
 
+		// Meta- 构建InstantiationModelAwarePointcutAdvisorImpl的 Advisor
 		return new InstantiationModelAwarePointcutAdvisorImpl(expressionPointcut, candidateAdviceMethod,
 				this, aspectInstanceFactory, declarationOrderInAspect, aspectName);
 	}

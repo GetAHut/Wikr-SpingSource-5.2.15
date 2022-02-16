@@ -179,6 +179,8 @@ class CglibAopProxy implements AopProxy, Serializable {
 			validateClassIfNecessary(proxySuperClass, classLoader);
 
 			// Configure CGLIB Enhancer...
+			// Meta- 创建cglib代理对象
+			// Meta- 配置属性
 			Enhancer enhancer = createEnhancer();
 			if (classLoader != null) {
 				enhancer.setClassLoader(classLoader);
@@ -187,11 +189,18 @@ class CglibAopProxy implements AopProxy, Serializable {
 					enhancer.setUseCache(false);
 				}
 			}
+
+			// Meta- 设置cglib代理的父类
 			enhancer.setSuperclass(proxySuperClass);
+			// Meta- 给cglib代理类 设置一个接口
+			// Meta- cglib代理是继承关系 如： proxy extends target
+			// Meta- 通过API设置接口后 关系如下  proxy extends target implements interface
 			enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(this.advised));
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 			enhancer.setStrategy(new ClassLoaderAwareGeneratorStrategy(classLoader));
 
+			// Meta- 调用方法逻辑
+			// Meta- 逻辑与Jdk动态代理类似
 			Callback[] callbacks = getCallbacks(rootClass);
 			Class<?>[] types = new Class<?>[callbacks.length];
 			for (int x = 0; x < types.length; x++) {
@@ -203,6 +212,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			enhancer.setCallbackTypes(types);
 
 			// Generate the proxy class and create a proxy instance.
+			// Meta- 创建cglib代理对象
 			return createProxyClassAndInstance(enhancer, callbacks);
 		}
 		catch (CodeGenerationException | IllegalArgumentException ex) {
@@ -288,6 +298,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 		boolean isStatic = this.advised.getTargetSource().isStatic();
 
 		// Choose an "aop" interceptor (used for AOP calls).
+		// Meta- 封装Interceptor对象
 		Callback aopInterceptor = new DynamicAdvisedInterceptor(this.advised);
 
 		// Choose a "straight to target" interceptor. (used for calls that are
@@ -331,7 +342,9 @@ class CglibAopProxy implements AopProxy, Serializable {
 			// TODO: small memory optimization here (can skip creation for methods with no advice)
 			for (int x = 0; x < methods.length; x++) {
 				Method method = methods[x];
+				// Meta- 封装责任链
 				List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, rootClass);
+				// Meta- 调用责任链 @see DynamicAdvisedInterceptor#intercept
 				fixedCallbacks[x] = new FixedChainStaticTargetInterceptor(
 						chain, this.advised.getTargetSource().getTarget(), this.advised.getTargetClass());
 				this.fixedInterceptorMap.put(method, x);

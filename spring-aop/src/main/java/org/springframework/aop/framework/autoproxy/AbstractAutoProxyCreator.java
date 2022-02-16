@@ -338,22 +338,69 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// Meta- 校验
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// Meta- 已经判断过的bean 在advisedBeans Map中的value = false 则直接返回 不需要进行后面逻辑
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// Meta- isInfrastructureClass() -> 表示正在创建AOP的bean不需要创建AOP
+		// Meta- 如Advisor.class  Advice.class PointCut.class AopInfrastructureBean.class....
+		// Meta- 将判断过的bean添加到 advisedBeans集合中
+		// Meta- advisedBeans 表示已经判断过的bean
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
+			// Meta- false表示 不需要进行AOP。 可以直接返回
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// Meta- AOP - 解析Advisors -> 创建Advice
+		// Meta- 判断bean是否存在Advice Advisor，将有的封装成Interceptor
+		// Meta- 在bean的生命周期中去找。
+		// Meta- 解析切面方法  @see AbstractAdvisorAutoProxyCreator#getAdvicesAndAdvisorsForBean
+		// Meta- 1. 找到所有Advisor类型的bean
+		// Meta- 2. 遍历所有bean
+		// Meta- 3. 找到@Aspect注解的切面bean  -> 封装成 MetadataAwareAspectInstanceFactory
+		// Meta- 4. 解析 切面bean中没有加@Pointcut注解的所有方法，排序，并将带有@Before 且能解析出Pointcut表达式的等方法都封装成一个Advisors
+		// Meta- wikr-@see ReflectiveAspectJAdvisorFactory#getAdvisors
+		// Meta- 构建 InstantiationModelAwarePointcutAdvisorImpl 类型的advisor
+		// Meta- 5. 筛选 通过Pointcut表达式 去匹配
+		// Meta- wirk-@see AopUtils#canApply(org.springframework.aop.Pointcut, java.lang.Class<?>, boolean)
+		// Meta- 6. 解析成的InstantiationModelAwarePointcutAdvisorImpl类型的Advisors 在初始化时会去判断Advice类型
+		// Meta- wikr-是@Before @After...
+		// Meta- wirk-@see InstantiationModelAwarePointcutAdvisorImpl#instantiateAdvice
+		// Meta- 7. wikr@see-ReflectiveAspectJAdvisorFactory.getAdvice
+		// Meta- wikr-根据传入的advisors（切面类中的方法）来判断生成什么类型的advice
+		// Meta- 8. 如@Before注解 -> AspectJMethodBeforeAdvice
+		// Meta- 9. 在调用执行被AOP方法时 会走到这个advice中 调用before()
+		// Meta- wikr-@see AspectJMethodBeforeAdvice#before
+		// Meta- 注意 @After 和 @AfterReturning 注解不同。 @After是在finally{} 中执行。
+		// Meta- 10. AOP中支持在Advisors方法上传入 被AOP方法的参数
+		// Meta- wikr- @log
+		// Meta- wikr- public void test(String a, String b){ out.print("test")}
+		// Meta- wikr- xxx.test("wikr", "meta")
+		// Meta- wikr- advisor方法中如：
+		// Meta- wikr- @Before(value = "execution(public void com.wikr.entities.User.test(..)) && args(a, b)", argNames = "a, b")
+		// Meta- wikr- public void before(String a, String b){
+		// Meta- wikr- 		System.out.println(a); // wikr
+		// Meta- wikr-  	System.out.println(b); // meta
+		// Meta- wikr-  	System.out.println("在方法之前执行");
+		// Meta- wikr- }
+		// Meta- 这种是在构建了Advice时，有一个方法解析
+		// Meta- wikr-@see AbstractAspectJAdvice#invokeAdviceMethod(org.aspectj.weaver.tools.JoinPointMatch, java.lang.Object, java.lang.Throwable)
+		// Meta- wikr-@see AbstractAspectJAdvice#argBinding
+		// Meta- 通过argBinding()方法绑定参数，且参数名必须一致。
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+
 		// Meta- 判断bean是否已经提前AOP过了 如果是直接将当前bean返回。
 		if (specificInterceptors != DO_NOT_PROXY) {
+			// Meta- 将需要代理的bean 缓存，并设置为true （需要代理）
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// Meta- 创建代理对象。ProxyFactory
+			// Meta- new SingletonTargetSource(bean) -> 被代理对象包装成TargetSource 设置给ProxyFactory
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
@@ -453,9 +500,12 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
 		}
 
+		// Meta- 构建ProxyFactory -> AOP代理
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
 
+		// Meta- 判断从 @EnableAspectJAutoProxy 中获取到的 proxyTargetClass属性至
+		// Meta- 判断是Jdk 还是cglib
 		if (!proxyFactory.isProxyTargetClass()) {
 			if (shouldProxyTargetClass(beanClass, beanName)) {
 				proxyFactory.setProxyTargetClass(true);
@@ -465,8 +515,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			}
 		}
 
+		// Meta- 构建advisors 代理逻辑
+		// Meta- specificInterceptors -> 在判断bean是需要AOP时 获取的Interceptor
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		proxyFactory.addAdvisors(advisors);
+		// Meta- 设置被代理对象
 		proxyFactory.setTargetSource(targetSource);
 		customizeProxyFactory(proxyFactory);
 
@@ -475,6 +528,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			proxyFactory.setPreFiltered(true);
 		}
 
+		// Meta- 创建bean的AOP代理对象，
+		// Meta- 在proxyFactory中还会进行一次筛选（对advisors）
+		// Meta- 第一次筛选是 从bean中筛选是否需要进行AOP, 同时将AOP逻辑封装成Interceptor
+		// Meta- 在ProxyFactory中 还是回去对bean筛选，ProxyFactory本身需要去判断是否有Advisors， 是否有需要代理的逻辑。
 		return proxyFactory.getProxy(getProxyClassLoader());
 	}
 

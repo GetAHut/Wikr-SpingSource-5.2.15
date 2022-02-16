@@ -2015,6 +2015,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Meta- 初始化后
 		// Meta- AOP处理
 		if (mbd == null || !mbd.isSynthetic()) {
+			// Meta- AOP 处理逻辑
+			// Meta- AOP的BeanPostProcessor 是通过@EnableAspectJAutoProxy 中的
+			// Meta- wikr-@Import 导入的 AspectJAutoProxyRegistrar 来注册的
+			// Meta- wirk-@see AnnotationAwareAspectJAutoProxyCreator
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 

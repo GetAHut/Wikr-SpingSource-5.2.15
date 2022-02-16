@@ -89,25 +89,33 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
+					// Meta- Object.class 找出所有的bean
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
 					for (String beanName : beanNames) {
+						// Meta- 可自定义扩展逻辑
 						if (!isEligibleBean(beanName)) {
 							continue;
 						}
 						// We must be careful not to instantiate beans eagerly as in this case they
 						// would be cached by the Spring container but would not have been weaved.
+						// Meta- 拿到 beanClass bean类型
 						Class<?> beanType = this.beanFactory.getType(beanName, false);
 						if (beanType == null) {
 							continue;
 						}
+						// Meta- 判断bean上是否有@Aspect注解
 						if (this.advisorFactory.isAspect(beanType)) {
+							// Meta- 保存所有有@Aspect注解的beanName -> bean
 							aspectNames.add(beanName);
+							// Meta- 获取Aspect切面注解元数据
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
+								// Meta- 拿到一个切面所有的Advisor 一个切面中会有很多advisors（切面中定义的方法）
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
+								// Meta- 判断是否单例bean
 								if (this.beanFactory.isSingleton(beanName)) {
 									this.advisorsCache.put(beanName, classAdvisors);
 								}

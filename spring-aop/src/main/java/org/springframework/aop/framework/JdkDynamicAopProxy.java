@@ -110,6 +110,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 	@Override
 	public Object getProxy() {
+		// Meta- Jdk动态代理实现
 		return getProxy(ClassUtils.getDefaultClassLoader());
 	}
 
@@ -118,8 +119,10 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 		if (logger.isTraceEnabled()) {
 			logger.trace("Creating JDK dynamic proxy: " + this.advised.getTargetSource());
 		}
+		// Meta- 处理添加的接口信息
 		Class<?>[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(this.advised, true);
 		findDefinedEqualsAndHashCodeMethods(proxiedInterfaces);
+		// Meta- 创建Jdk动态代理对象
 		return Proxy.newProxyInstance(classLoader, proxiedInterfaces, this);
 	}
 
@@ -153,18 +156,23 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 */
 	@Override
 	@Nullable
+	// Meta- jdk动态代理执行方法时调用 执行逻辑
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 		Object oldProxy = null;
 		boolean setProxyContext = false;
 
+		// Meta- advised -> proxyFactory
+		// Meta- 拿到proxyFactory设置的targetSource
 		TargetSource targetSource = this.advised.targetSource;
 		Object target = null;
 
 		try {
+			// Meta- 判断接口中是否有equals方法
 			if (!this.equalsDefined && AopUtils.isEqualsMethod(method)) {
 				// The target does not implement the equals(Object) method itself.
 				return equals(args[0]);
 			}
+			// Meta- hashCode
 			else if (!this.hashCodeDefined && AopUtils.isHashCodeMethod(method)) {
 				// The target does not implement the hashCode() method itself.
 				return hashCode();
@@ -181,6 +189,8 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			Object retVal;
 
+			// Meta- 默认为false  可以设置为true， 设置为true表示可以在当前被代理的方法中获取被代理对象。
+			// Meta- 设置为true 会将代理对象封装到ThreadLocal中。
 			if (this.advised.exposeProxy) {
 				// Make invocation available if necessary.
 				oldProxy = AopContext.setCurrentProxy(proxy);
@@ -189,28 +199,38 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			// Get as late as possible to minimize the time we "own" the target,
 			// in case it comes from a pool.
+			// Meta- 拿到被代理对象 和被代理对象的类型
 			target = targetSource.getTarget();
 			Class<?> targetClass = (target != null ? target.getClass() : null);
 
 			// Get the interception chain for this method.
 			//责任链调用
+			// Meta- ProxyFactory 中设置的Advisor 封装成链路 责任链条用。
+			// Meta- 通过method 和 targetClass 筛选符合代理条件的类和方法
 			List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 
 			// Check whether we have any advice. If we don't, we can fallback on direct
 			// reflective invocation of the target, and avoid creating a MethodInvocation.
+			// Meta- 如果责任链为空
 			if (chain.isEmpty()) {
 				// We can skip creating a MethodInvocation: just invoke the target directly
 				// Note that the final invoker must be an InvokerInterceptor so we know it does
 				// nothing but a reflective operation on the target, and no hot swapping or fancy proxying.
+				// Meta- 责任链为空表示没有代理逻辑， 直接调用被代理对象的方法。
 				Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
 				retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
 			}
 			else {
 				// We need to create a method invocation...
+				// Meta- proxy: 代理对象， target: 被代理对象, method: 正在代理的方法
+				// Meta- args: 方法参数 targetClass 被代理对象类型 chain: advisor责任链。
 				MethodInvocation invocation =
 						new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
 				// Proceed to the joinpoint through the interceptor chain.
 				//在有责任链的时候调用 最终调用具体方法
+				// Meta- 责任链处理完成 调用被代理对象的方法
+				// Meta- 链式递归
+				// Meta- wikr-@see ReflectiveMethodInvocation#proceed
 				retVal = invocation.proceed();
 			}
 

@@ -1284,7 +1284,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		else {
 			// Meta- 如果@Autowired是配合@Lazy使用的。返回的是一个代理对象赋值给属性 或者是方法参数，。
 			// Meta- 只有去使用这个属性或者参数的时候 才会去获取这个bean（因为懒加载。）
-			// Meta- @see ContextAnnotationAutowireCandidateResolver#getLazyResolutionProxyIfNecessary
+			// Meta- wikr-@see ContextAnnotationAutowireCandidateResolver#getLazyResolutionProxyIfNecessary
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
 					descriptor, requestingBeanName);
 			if (result == null) {

@@ -263,6 +263,7 @@ public abstract class BeanFactoryUtils {
 	public static String[] beanNamesForTypeIncludingAncestors(
 			ListableBeanFactory lbf, Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
 
+		// Meta- 通过beanClass去找所有的beanNames
 		Assert.notNull(lbf, "ListableBeanFactory must not be null");
 		// Meta- 从本身这个beanFactory中找。
 		String[] result = lbf.getBeanNamesForType(type, includeNonSingletons, allowEagerInit);
