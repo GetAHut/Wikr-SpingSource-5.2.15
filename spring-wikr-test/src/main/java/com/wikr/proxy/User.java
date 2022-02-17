@@ -1,5 +1,7 @@
 package com.wikr.proxy;
 
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+
 import javax.annotation.PreDestroy;
 
 /**
@@ -10,6 +12,7 @@ import javax.annotation.PreDestroy;
 public class User {
 
 	public void test(){
+//		TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 		System.out.println("test");
 	}
 }

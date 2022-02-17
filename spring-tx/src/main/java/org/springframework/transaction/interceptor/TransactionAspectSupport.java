@@ -331,8 +331,12 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			final InvocationCallback invocation) throws Throwable {
 
 		// If the transaction attribute is null, the method is non-transactional.
+		// Meta- 获取@Transactional的配置
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		// Meta- 获取 @Transactional 的属性值
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+
+		// Meta- 去找 TransactionManager.class 的Bean对象
 		final TransactionManager tm = determineTransactionManager(txAttr);
 
 		if (this.reactiveAdapterRegistry != null && tm instanceof ReactiveTransactionManager) {
@@ -353,21 +357,33 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 					method, targetClass, invocation, txAttr, (ReactiveTransactionManager) tm);
 		}
 
+		// Meta- 将tm （transactionManager） 强制转换为 PlatformTransactionManager.class 类型 ，不是这个类型 会报错
 		PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
+
+		// Meta- 获取方法名字 joinpoint的唯一标识 将方法名字当做事务名字
+		// Meta- joinpoint
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
+		// Meta- CallbackPreferringPlatformTransactionManager 表示拥有回调功能的 PlatformTransactionManager
 		if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			// Meta- 如果有必要就创建事务，（涉及到事务传播机制的实现）
+			// Meta- 开启事务、挂起事务逻辑
+			// Meta- txInfo -> 包含事务连接对象
 			TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
 
 			Object retVal;
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
+				// Meta- 开启事务
+				// Meta- 执行被代理的方法
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {
 				// target invocation exception
+				// Meta- 抛出异常
+				// Meta- 回滚
 				completeTransactionAfterThrowing(txInfo, ex);
 				throw ex;
 			}
@@ -383,6 +399,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 
+			// Meta- 提交事务
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
@@ -559,6 +576,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			@Nullable TransactionAttribute txAttr, final String joinpointIdentification) {
 
 		// If no name specified, apply method identification as transaction name.
+		// Meta- 如果没有自己设置名字， 则使用方法名字作为事务名称
 		if (txAttr != null && txAttr.getName() == null) {
 			txAttr = new DelegatingTransactionAttribute(txAttr) {
 				@Override
@@ -571,7 +589,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
-				status = tm.getTransaction(txAttr);
+				// Meta- 开启事务
+				// Meta- txAttr -> TransactionAttribute @Transactional 解析出来的对象
+				// Meta- wikr-@see AbstractPlatformTransactionManager#getTransaction
+ 				status = tm.getTransaction(txAttr);
 			}
 			else {
 				if (logger.isDebugEnabled()) {
@@ -630,6 +651,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			if (logger.isTraceEnabled()) {
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() + "]");
 			}
+			// Meta- wikr-@see AbstractPlatformTransactionManager#commit
 			txInfo.getTransactionManager().commit(txInfo.getTransactionStatus());
 		}
 	}
@@ -646,8 +668,14 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				logger.trace("Completing transaction for [" + txInfo.getJoinpointIdentification() +
 						"] after exception: " + ex);
 			}
+			// Meta- rollbackOn() -> 对应rollbackFor属性
+			// Meta- 根据异常类型判断是否需要回滚
+			// Meta- RuleBasedTransactionAttribute 是解析注解返回的对象
+			// Meta- wikr-@see RuleBasedTransactionAttribute#rollbackOn
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
+					// Meta- 回滚 rollback()
+					// Meta- wikr-@see AbstractPlatformTransactionManager#rollback
 					txInfo.getTransactionManager().rollback(txInfo.getTransactionStatus());
 				}
 				catch (TransactionSystemException ex2) {

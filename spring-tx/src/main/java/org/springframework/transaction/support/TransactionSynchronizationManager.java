@@ -275,6 +275,7 @@ public abstract class TransactionSynchronizationManager {
 			throw new IllegalStateException("Cannot activate transaction synchronization - already active");
 		}
 		logger.trace("Initializing transaction synchronization");
+		// Meta- 初始化 ThreadLocal
 		synchronizations.set(new LinkedHashSet<>());
 	}
 

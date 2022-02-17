@@ -180,6 +180,8 @@ public abstract class DataSourceUtils {
 
 		boolean debugEnabled = logger.isDebugEnabled();
 		// Set read-only flag.
+		// Meta- readOnly
+		// Meta- 只读 不能执行insert语句
 		if (definition != null && definition.isReadOnly()) {
 			try {
 				if (debugEnabled) {
@@ -211,6 +213,7 @@ public abstract class DataSourceUtils {
 			int currentIsolation = con.getTransactionIsolation();
 			if (currentIsolation != definition.getIsolationLevel()) {
 				previousIsolationLevel = currentIsolation;
+				// Meta- 设置隔离级别
 				con.setTransactionIsolation(definition.getIsolationLevel());
 			}
 		}
