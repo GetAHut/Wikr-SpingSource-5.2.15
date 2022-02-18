@@ -60,7 +60,11 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 
 	@Override
 	public void onStartup(ServletContext servletContext) throws ServletException {
+		// Meta- 调用父类
+		// Meta- 注册ContextLoaderListener
+		// Meta- 启动父容器
 		super.onStartup(servletContext);
+		// Meta- 注册DispatcherServlet
 		registerDispatcherServlet(servletContext);
 	}
 
@@ -79,23 +83,30 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 		String servletName = getServletName();
 		Assert.hasLength(servletName, "getServletName() must not return null or empty");
 
+		// Meta- 创建子容器
 		WebApplicationContext servletAppContext = createServletApplicationContext();
 		Assert.notNull(servletAppContext, "createServletApplicationContext() must not return null");
 
+		// Meta- 创建DispatcherServlet
 		FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
 		Assert.notNull(dispatcherServlet, "createDispatcherServlet(WebApplicationContext) must not return null");
 		dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
 
+		// Meta- 初始化
 		ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
 		if (registration == null) {
 			throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " +
 					"Check if there is another servlet registered under the same name.");
 		}
 
+		// Meta- 设置启动时立即加载 DispatcherServlet
 		registration.setLoadOnStartup(1);
+		// Meta- 设置映射
 		registration.addMapping(getServletMappings());
+		// Meta- 是否异步支持
 		registration.setAsyncSupported(isAsyncSupported());
 
+		// Meta- 设置拦截器
 		Filter[] filters = getServletFilters();
 		if (!ObjectUtils.isEmpty(filters)) {
 			for (Filter filter : filters) {
@@ -103,6 +114,7 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 			}
 		}
 
+		// Meta- 模板方法 可以对DispatcherServlet定制
 		customizeRegistration(registration);
 	}
 

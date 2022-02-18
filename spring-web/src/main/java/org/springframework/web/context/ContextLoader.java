@@ -275,9 +275,11 @@ public class ContextLoader {
 		try {
 			// Store context in local instance variable, to guarantee that
 			// it is available on ServletContext shutdown.
+			// Meta- xml创建（如果配置xml从此处创建解析）
 			if (this.context == null) {
 				this.context = createWebApplicationContext(servletContext);
 			}
+
 			if (this.context instanceof ConfigurableWebApplicationContext) {
 				ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) this.context;
 				if (!cwac.isActive()) {
@@ -286,12 +288,16 @@ public class ContextLoader {
 					if (cwac.getParent() == null) {
 						// The context instance was injected without an explicit parent ->
 						// determine parent for root web application context, if any.
+						// Meta- 默认返回空，可以自定义扩展的
 						ApplicationContext parent = loadParentContext(servletContext);
+						// Meta- 设置Spring父容器（默认为空）
 						cwac.setParent(parent);
 					}
+					// Meta- 容器刷新
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
+			// Meta- 将容器添加到servlet域中
 			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.context);
 
 			ClassLoader ccl = Thread.currentThread().getContextClassLoader();
@@ -383,6 +389,7 @@ public class ContextLoader {
 			}
 		}
 
+		// Meta- 设置ServletContext到Spring上下文
 		wac.setServletContext(sc);
 		String configLocationParam = sc.getInitParameter(CONFIG_LOCATION_PARAM);
 		if (configLocationParam != null) {
@@ -398,6 +405,7 @@ public class ContextLoader {
 		}
 
 		customizeContext(sc, wac);
+		// Meta- 调用refresh() 刷新容器
 		wac.refresh();
 	}
 

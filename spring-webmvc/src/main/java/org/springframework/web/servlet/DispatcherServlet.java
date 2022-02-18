@@ -500,13 +500,18 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
+		// Meta- 初始化加载各种解析器
+		// Meta- 文件解析器
 		initMultipartResolver(context);
 		initLocaleResolver(context);
 		initThemeResolver(context);
+		// Meta- 初始化HandlerMappings
 		initHandlerMappings(context);
+		// Meta- 初始化HandlerAdapter
 		initHandlerAdapters(context);
 		initHandlerExceptionResolvers(context);
 		initRequestToViewNameTranslator(context);
+		// Meta- 视图解析器
 		initViewResolvers(context);
 		initFlashMapManager(context);
 	}
@@ -1005,14 +1010,17 @@ public class DispatcherServlet extends FrameworkServlet {
 		WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
 
 		try {
+			// Meta- 视图
 			ModelAndView mv = null;
 			Exception dispatchException = null;
 
 			try {
+				// Meta- 校验是否是上传请求
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// Meta- 获取对应的HandlerMapping
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
 					noHandlerFound(processedRequest, response);
@@ -1020,6 +1028,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Determine handler adapter for the current request.
+				// Meta- 获取对应的HandlerAdapter
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1032,18 +1041,24 @@ public class DispatcherServlet extends FrameworkServlet {
 					}
 				}
 
+				// Meta- 前置拦截方法  Interceptor.preHandle()
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// Meta- 执行HandlerAdapter，参数封装、数据格式转换、数据验证
+				// Meta- 执行处理器Handler（Controller） 也叫页面控制器
+				// Meta- 执行结果返回ModelAndView
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
 
+				// Meta- 视图解析器处理
 				applyDefaultViewName(processedRequest, mv);
+				// Meta- 后置拦截方法 Interceptor.postHandler()
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1054,6 +1069,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+			// Meta- 将处理结果MV 响应给客户
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1230,7 +1246,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
 		if (this.handlerMappings != null) {
+			// Meta- 遍历所有的handlerMappings 拿到最合适的
 			for (HandlerMapping mapping : this.handlerMappings) {
+				// Meta- 返回处理器链
 				HandlerExecutionChain handler = mapping.getHandler(request);
 				if (handler != null) {
 					return handler;

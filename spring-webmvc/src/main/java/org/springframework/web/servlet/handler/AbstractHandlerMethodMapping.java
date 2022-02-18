@@ -212,8 +212,11 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * @see #handlerMethodsInitialized
 	 */
 	protected void initHandlerMethods() {
+		// Meta- 获取当前容器所有的beanname
 		for (String beanName : getCandidateBeanNames()) {
 			if (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) {
+				// Meta- 处理@Controller @RequestMapping
+				// Meta- 对应对应bean的@RequestMapping方法 并添加映射关系
 				processCandidateBean(beanName);
 			}
 		}
@@ -254,6 +257,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				logger.trace("Could not resolve type for bean '" + beanName + "'", ex);
 			}
 		}
+		// Meta- 判断beanType 是否为Controller 、RequestMapping
 		if (beanType != null && isHandler(beanType)) {
 			detectHandlerMethods(beanName);
 		}
@@ -270,6 +274,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 
 		if (handlerType != null) {
 			Class<?> userType = ClassUtils.getUserClass(handlerType);
+			// Meta- 获取bean的所有方法
 			Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
 					(MethodIntrospector.MetadataLookup<T>) method -> {
 						try {
@@ -285,6 +290,9 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 			}
 			methods.forEach((method, mapping) -> {
 				Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);
+				// Meta- 将有@RequestMapping注解的方法 解析
+				// Meta- 缓存进两个map  如果非模糊匹配加入 urlLookup
+				// Meta- 模糊匹配加入 corsLookup 按照模糊匹配规则排序
 				registerHandlerMethod(handler, invocableMethod, mapping);
 			});
 		}

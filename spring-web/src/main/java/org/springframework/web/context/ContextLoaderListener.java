@@ -100,6 +100,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		// Meta- 在tomcat容器启动时调用
 		initWebApplicationContext(event.getServletContext());
 	}
 

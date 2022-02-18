@@ -53,9 +53,12 @@ public abstract class AbstractAnnotationConfigDispatcherServletInitializer
 	@Override
 	@Nullable
 	protected WebApplicationContext createRootApplicationContext() {
+		// Meta- 模板方法 提供配置类（父容器的配置类）
 		Class<?>[] configClasses = getRootConfigClasses();
 		if (!ObjectUtils.isEmpty(configClasses)) {
+			// Meta- 创建父容器
 			AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+			// Meta- 配置类注册
 			context.register(configClasses);
 			return context;
 		}
