@@ -135,7 +135,7 @@ abstract class ConfigurationClassUtils {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
 		// Meta- 1. 如果@Configuration(proxyBeanMethods = false)表示为一个lite配置类
-		// Meta- 2. 如果有@Component @ComponentScan @Import @ImportResource 任一个注解都是配置类
+		// Meta- 2. 如果有@Component @ComponentScan @Import @ImportResource 中 任一个注解都是配置类
 		// Meta- 3. 如果配置类上没有以上注解， 但是有@Bean的方法 也是一个配置类
 		// Meta- 以上三种情况都是lite配置类
 		else if (config != null || isConfigurationCandidate(metadata)) {

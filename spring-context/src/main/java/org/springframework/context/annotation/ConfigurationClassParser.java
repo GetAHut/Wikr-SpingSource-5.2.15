@@ -307,6 +307,8 @@ class ConfigurationClassParser {
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
 		if (!componentScans.isEmpty() &&
+				// Meta- 判断是否有@Condition注解
+				// Meta- TODO 处理 @Condition
 				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
 			//遍历
 			for (AnnotationAttributes componentScan : componentScans) {
@@ -404,10 +406,10 @@ class ConfigurationClassParser {
 		if (!memberClasses.isEmpty()) {
 			List<SourceClass> candidates = new ArrayList<>(memberClasses.size());
 			for (SourceClass memberClass : memberClasses) {
-				// Meta- 判断是不是一个配置类 （lite）
+				// Meta- 判断内部类是不是一个配置类 （lite）
 				if (ConfigurationClassUtils.isConfigurationCandidate(memberClass.getMetadata()) &&
 						!memberClass.getMetadata().getClassName().equals(configClass.getMetadata().getClassName())) {
-					// Meta- 将配置类添加到集合
+					// Meta- 将配置类添加到集合 待递归解析
 					candidates.add(memberClass);
 				}
 			}

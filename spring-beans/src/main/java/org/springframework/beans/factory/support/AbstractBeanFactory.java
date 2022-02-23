@@ -412,7 +412,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							//  			-> 第七次调用BeanPostProcessor （在bean的初始化之前）
 							//  		(7). BeanPostProcessor.postProcessBeforeInitialization();
 							//  			-> 其中一个实现类：InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization()
-							// 				-> 会去处理@PostConstruct注解
+							// 				-> 会去处理@PostConstruct注解的方法（但是这里不会调用）
 							//  			-> ApplicationContextAwareProcessor.postProcessBeforeInitialization()这个实现类，
 							// 				-> 会去判断各种Aware， 符合在按照类型去回调Aware。
 							// Meta- 8. bean的初始化 -> invokeInitMethods()

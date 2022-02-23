@@ -276,14 +276,14 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		//获取IOC容器中所有beanDefinition名称
 		// Meta- 获取beanFactory中的beanDefinition
 		// Meta- 此时拿到的beanDefinition是在new Reader的时候注册的beanDefinition 以及配置类。
-		// Meta- 配置类为new容器时传入的AppConfig.class
+		// Meta- 配置类为 new容器时传入的 AppConfig.class
 		// Meta- 容器中自己注入的@see AnnotationConfigUtils#registerAnnotationConfigProcessors(org.springframework.beans.factory.support.BeanDefinitionRegistry, java.lang.Object)
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		//循环beanDefinition信息
 		// Meta- 遍历
 		for (String beanName : candidateNames) {
-			//通过beanName获取bean对象
+			// Meta- 通过beanName获取beanDefinition
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
 				if (logger.isDebugEnabled()) {
@@ -294,7 +294,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			//即是判断配置类是否有@Configuration注解
 			//筛选配置类
 			// Meta- 判断是否是配置类
-			// Meta- 标记配置为 full - lite
+			// Meta- 标记配置为 full or lite
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				//满足则添加至配置类集合中
 				// Meta- 将所有满足筛选条件的配置类添加到配置类集合中
@@ -358,13 +358,14 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// Meta- 3. 检查配置类上是否有@Import注解：有注解去获取@Import导入的类，
 			//  		通过ConfigurationClassParser#processImports去处理导入的类。
 			//  			3.1.1: 判断导入类是否是ImportSelector类型。
-			//  				-> 是调用ImportSelector#selectImports 获取方法返回的所有类名。
+			//  				-> 是调用ImportSelector#selectImports 获取方法返回的所有类名（数组）。
 			//  					再次将这些类当做@Import导入的类，递归调用ConfigurationClassParser#processImports解析
 			//  			3.1.2: 判断是否是DeferredImportSelector类型。 （表示推迟解析）
 			// 					-> 是在当前这一批配置类解析结束之后，再去解析此类型的selectImports方法
 			//  			3.2: 判断是否是ImportBeanDefinitionRegistrar.class类型。
 			//  				-> 是则将实现ImportBeanDefinitionRegistrar接口的对象实例化，
 			//  					添加到配置类的 importBeanDefinitionRegistrars 属性中
+			// 					-> （参考Mybatis整合Spring实现）
 			//  			3.3: 如果导入的类不是以上类型，则将导入的类当做新的配置类递归解析。
 			// Meta- 4. 检查配置类上是否有@ImportResource("Spring.xml")，
 			//  		有则将解析出来的配置文件路径设置到配置类的 importResources 属性中

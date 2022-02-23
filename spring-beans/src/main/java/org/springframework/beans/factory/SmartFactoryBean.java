@@ -76,6 +76,7 @@ public interface SmartFactoryBean<T> extends FactoryBean<T> {
 	 * @see org.springframework.beans.factory.config.ConfigurableListableBeanFactory#preInstantiateSingletons()
 	 */
 	default boolean isEagerInit() {
+		// Meta- 设置FactoryBean是否需要提前初始化
 		return false;
 	}
 

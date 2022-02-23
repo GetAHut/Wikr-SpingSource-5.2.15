@@ -897,7 +897,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// Meta- RootBeanDefinition是合并之后的beanDefinition
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 
-			// Meta- !bd.isAbstract() -> 判断是不是抽象的beanDefinition  不是指抽象类， 在扫描的时候就判断了抽象类（除了@lookup）是不会扫描成beanDefinition
+			// Meta- wikr-!bd.isAbstract() -> 判断是不是抽象的beanDefinition  不是指抽象类， 在扫描的时候就判断了抽象类（除了@lookup）是不会扫描成beanDefinition
 			// Meta- 如果是一个抽象的BeanDefinition是不会创建Bean的。
 			// Meta- 在xml配置中可以设置abstract = true， 则可以设置成抽象的beanDefinition，可以作为其他非抽象bd的父类，则可以继续此bd的属性。
 			// Meta- 是否是单例的bean ，且不是懒加载的bean 再去创建bean

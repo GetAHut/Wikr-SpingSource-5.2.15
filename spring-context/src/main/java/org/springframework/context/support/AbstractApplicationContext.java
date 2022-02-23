@@ -537,6 +537,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// Meta- BeanFactory 准备工作
 			// Meta- 1. 设置beanFactory的类加载器 、EL表达式解析器、类型转换器
 			// Meta- 2. 添加了三个BeanPostProcessor （是具体的实例对象 new）
+			// Meta- wikr-  2.1 ApplicationContextAwareProcessor  --->  处理Aware回调
+			// Meta- wikr-  2.2 ApplicationListenerDetector  --->  用以获取所有的listener （监听器）
+			// Meta- wikr-  2.3 LoadTimeWeaverAwareProcessor  --->
 			// Meta- 3. 记录ignoreDependencyInterface
 			// Meta- 4. 记录ResolvableDependency
 			// Meta- 5. 添加三个单例bean
