@@ -360,8 +360,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// Meta- 将tm （transactionManager） 强制转换为 PlatformTransactionManager.class 类型 ，不是这个类型 会报错
 		PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
 
-		// Meta- 获取方法名字 joinpoint的唯一标识 将方法名字当做事务名字
-		// Meta- joinpoint
+		// Meta- 获取方法名字 joinPoint的唯一标识 将方法名字当做事务名字
+		// Meta- joinPoint
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
 		// Meta- CallbackPreferringPlatformTransactionManager 表示拥有回调功能的 PlatformTransactionManager
@@ -376,7 +376,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
-				// Meta- 开启事务
 				// Meta- 执行被代理的方法
 				retVal = invocation.proceedWithInvocation();
 			}

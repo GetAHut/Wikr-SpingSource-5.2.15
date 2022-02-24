@@ -64,7 +64,8 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 	public TransactionAttributeSource transactionAttributeSource() {
 		// Meta- AnnotationTransactionAttributeSource 中定义了pointcut
 		// Meta- 用来去判断哪个类 或者哪个方法上添加了@Transactional注解
-		// Meta- 解析@Transactional
+		// Meta- 解析@Transactional 封装成 RuleBasedTransactionAttribute
+		// Meta- wikr-@see SpringTransactionAnnotationParser#parseTransactionAnnotation
 		return new AnnotationTransactionAttributeSource();
 	}
 
@@ -73,6 +74,7 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 	// Meta- 注册事务相关拦截器
 	public TransactionInterceptor transactionInterceptor(TransactionAttributeSource transactionAttributeSource) {
 		// Meta- 事务相关 回滚 提交都在这个拦截器中处理
+		// Meta- 处理事务逻辑 @see TransactionInterceptor#invoke
 		TransactionInterceptor interceptor = new TransactionInterceptor();
 		interceptor.setTransactionAttributeSource(transactionAttributeSource);
 		if (this.txManager != null) {

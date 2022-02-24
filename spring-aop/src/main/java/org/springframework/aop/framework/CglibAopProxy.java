@@ -201,6 +201,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 
 			// Meta- 调用方法逻辑
 			// Meta- 逻辑与Jdk动态代理类似
+			// Meta- 封装Cglib代理的 代理逻辑责任链
 			Callback[] callbacks = getCallbacks(rootClass);
 			Class<?>[] types = new Class<?>[callbacks.length];
 			for (int x = 0; x < types.length; x++) {

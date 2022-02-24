@@ -351,8 +351,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Meta- 如Advisor.class  Advice.class PointCut.class AopInfrastructureBean.class....
 		// Meta- 将判断过的bean添加到 advisedBeans集合中
 		// Meta- advisedBeans 表示已经判断过的bean
+		// Meta- shouldSkip()解析出Advisors 并判断是否符合当前的beanName
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
-			// Meta- false表示 不需要进行AOP。 可以直接返回
+			// Meta- Boolean.FALSE 表示 不需要进行AOP。 可以直接返回
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
@@ -505,7 +506,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
 
-		// Meta- 判断从 @EnableAspectJAutoProxy 中获取到的 proxyTargetClass属性至
+		// Meta- 判断从 @EnableAspectJAutoProxy 中获取到的 proxyTargetClass属性值
 		// Meta- 判断是Jdk 还是cglib
 		if (!proxyFactory.isProxyTargetClass()) {
 			if (shouldProxyTargetClass(beanClass, beanName)) {
@@ -519,6 +520,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Meta- 构建advisors 代理逻辑
 		// Meta- specificInterceptors -> 在判断bean是需要AOP时 获取的Interceptor
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
+		// Meta- 设置advisors
 		proxyFactory.addAdvisors(advisors);
 		// Meta- 设置被代理对象
 		proxyFactory.setTargetSource(targetSource);
