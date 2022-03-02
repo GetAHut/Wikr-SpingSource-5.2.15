@@ -111,7 +111,7 @@ import org.springframework.util.ReflectionUtils;
  */
 // Meta- HandlesTypes：表示Spring所感兴趣的类，spring会去找到这个类的所有实现类，注入到onStartup()方法中
 // Meta- Set<Class<?>> webAppInitializerClasses
-	// Meta- 通过SPI机制注入， 在启动tomcat的时候 会去启动 onStartup()
+// Meta- 通过SPI机制注入， 在启动tomcat的时候 会去启动 onStartup()
 @HandlesTypes(WebApplicationInitializer.class)
 public class SpringServletContainerInitializer implements ServletContainerInitializer {
 
@@ -152,7 +152,7 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 			for (Class<?> waiClass : webAppInitializerClasses) {
 				// Be defensive: Some servlet containers provide us with invalid classes,
 				// no matter what @HandlesTypes says...
-				// Meta- 如果不是借口 或者是抽象类 添加到 initializers 中
+				// Meta- 如果不是接口 或者是抽象类 添加到 initializers 中
 				if (!waiClass.isInterface() && !Modifier.isAbstract(waiClass.getModifiers()) &&
 						WebApplicationInitializer.class.isAssignableFrom(waiClass)) {
 					try {

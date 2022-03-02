@@ -1020,7 +1020,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
-				// Meta- 获取对应的HandlerMapping
+				// Meta- 1. 获取对应的HandlerMapping
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
 					noHandlerFound(processedRequest, response);
@@ -1028,7 +1028,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Determine handler adapter for the current request.
-				// Meta- 获取对应的HandlerAdapter
+				// Meta- 2. 获取对应的HandlerAdapter
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1047,7 +1047,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Actually invoke the handler.
-				// Meta- 执行HandlerAdapter，参数封装、数据格式转换、数据验证
+				// Meta- 4. 执行HandlerAdapter，参数封装、数据格式转换、数据验证
 				// Meta- 执行处理器Handler（Controller） 也叫页面控制器
 				// Meta- 执行结果返回ModelAndView
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
@@ -1056,7 +1056,7 @@ public class DispatcherServlet extends FrameworkServlet {
 					return;
 				}
 
-				// Meta- 视图解析器处理
+				// Meta- 5. 视图解析器处理
 				applyDefaultViewName(processedRequest, mv);
 				// Meta- 后置拦截方法 Interceptor.postHandler()
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
@@ -1069,7 +1069,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
-			// Meta- 将处理结果MV 响应给客户
+			// Meta- 6. 将处理结果MV 响应给客户
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
