@@ -462,7 +462,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Meta- 判断当前bean是除单例、原型之外的类型。
-				// Meta- @RequestScope -> request @SessionScope -> session... @see WebApplicationContext.class
+				// Meta- wikr-@RequestScope -> request @SessionScope -> session... @see WebApplicationContext.class
 				// Meta-
 				else {
 					// Meta- 此处可以是request或者session还有其他类型的scope；

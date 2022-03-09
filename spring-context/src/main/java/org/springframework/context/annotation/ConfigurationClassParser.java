@@ -198,6 +198,7 @@ class ConfigurationClassParser {
 
 		// Meta- 这里用来处理DeferredImportSelector 表示当前循环所有配置类解析完成之后解析
 		// Meta- DeferredImportSelector表示推迟，而ImportSelector是在正常执行时执行。
+		// Meta- 最主要扩展 参考Springboot
 		this.deferredImportSelectorHandler.process();
 	}
 

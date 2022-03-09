@@ -71,6 +71,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 		// Meta- 初始化了@Lazy、@Autowired、 @Resource的解析器
 		// Meta- 注册与事件相关的bean EventListenerMethodProcessor
 		// Meta- 注册 DefaultEventListenerFactory 将EventListenerMethodProcessor解析出来的Map<Method, Listener>封装成监听器对象。
+		// Meta- 注册 ConfigurationClassPostProcessor 用以解析配置类
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 		// Meta- 创建BeanDefinition扫描器
 		// Meta- 初始化  classpath类型的beanDefinition 扫描器

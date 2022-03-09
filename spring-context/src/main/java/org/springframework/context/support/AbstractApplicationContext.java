@@ -585,6 +585,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Initialize other special beans in specific context subclasses.
 				// Meta- 模板方法 提供给子类自定义实现
+				// Meta- SpringBoot中实现，启动了内嵌的Tomcat
 				onRefresh();
 
 				// Check for listener beans and register them.

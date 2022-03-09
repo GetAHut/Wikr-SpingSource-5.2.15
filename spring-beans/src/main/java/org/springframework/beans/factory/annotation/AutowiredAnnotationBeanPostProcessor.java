@@ -283,7 +283,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 									RootBeanDefinition mbd = (RootBeanDefinition)
 											this.beanFactory.getMergedBeanDefinition(beanName);
 									// Meta- 在bean实例化时判断是否有@Lookup，有则生成cglib代理对象。
-									// Meta- @see SimpleInstantiationStrategy.instantiate(org.springframework.beans.factory.support.RootBeanDefinition, java.lang.String, org.springframework.beans.factory.BeanFactory)
+									// Meta- wikr@see SimpleInstantiationStrategy.instantiate(org.springframework.beans.factory.support.RootBeanDefinition, java.lang.String, org.springframework.beans.factory.BeanFactory)
 									mbd.getMethodOverrides().addOverride(override);
 								}
 								catch (NoSuchBeanDefinitionException ex) {

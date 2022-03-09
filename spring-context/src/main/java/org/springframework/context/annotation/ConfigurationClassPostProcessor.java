@@ -360,7 +360,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			//  			3.1.1: 判断导入类是否是ImportSelector类型。
 			//  				-> 是调用ImportSelector#selectImports 获取方法返回的所有类名（数组）。
 			//  					再次将这些类当做@Import导入的类，递归调用ConfigurationClassParser#processImports解析
-			//  			3.1.2: 判断是否是DeferredImportSelector类型。 （表示推迟解析）
+			//  			3.1.2: 判断是否是DeferredImportSelector类型。 （表示推迟解析（分组Group process() ））
 			// 					-> 是在当前这一批配置类解析结束之后，再去解析此类型的selectImports方法
 			//  			3.2: 判断是否是ImportBeanDefinitionRegistrar.class类型。
 			//  				-> 是则将实现ImportBeanDefinitionRegistrar接口的对象实例化，
