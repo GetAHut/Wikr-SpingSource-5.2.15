@@ -424,7 +424,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							//  			-> 第八次调用BeanPostProcessor （bean初始化后）
 							//  		(8). BeanPostProcessor.postProcessAfterInitialization()  --> AOP逻辑处理、Async异步调用逻辑处理
 							//				-> wikr-@see AbstractAutoProxyCreator#postProcessAfterInitialization 处理AOP逻辑。
-							// Meta- 10. bean的销毁准备。 -> AbstractBeanFactory#registerDisposableBeanIfNecessary
+							// Meta- 10. bean的销毁准备。（doClose()方法） -> AbstractBeanFactory#registerDisposableBeanIfNecessary
 							//  					-> 将所有实现销毁接口 DisposableBean 、销毁注解 (@PreDestroy)方法的bean放到map中 等待调用context.close()方法是调用。
 							//  		  -> 第九次调用BeanPostProcessor （在bean的销毁准备）
 							//  		(9). DestructionAwareBeanPostProcessor.requiresDestruction() 判断一个bean是否需要销毁。自定义销毁逻辑
